@@ -28,8 +28,8 @@ import todayDate from "../../Controllers/today";
 // Fetch Appointments Function
 
 // get doctors
-const getData = async () => {
-  const res = await GET(admin.token, "get_doctor");
+const getData = async (clinic_id) => {
+  const res = await GET(admin.token, `get_doctor?clinic_id=${clinic_id || ""}`);
   return res.data;
 };
 
@@ -45,6 +45,8 @@ const QueueList = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const doctID = searchParams.get("doct");
   const doctname = searchParams.get("name");
+  const clinic_id = searchParams.get("clinic_id");
+  const ParamsDoctor = searchParams.get("isSelectedDoctor");
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -57,33 +59,63 @@ const QueueList = () => {
   // doctors
   const { isLoading: doctorsLoading, data: doctors } = useQuery({
     queryKey: ["doctors"],
-    queryFn: getData,
+    queryFn: () => getData(clinic_id),
   });
 
   useEffect(() => {
-    if (doctors) {
-      const firstDoct = doctors[0];
-      if (!doctID || !doctname) {
+    if (doctors && doctors.length > 0) {
+      const selectedDoctor = doctID
+        ? doctors?.find((doc) => doc.user_id.toString() === doctID)
+        : null;
+
+      console.log(doctID, selectedDoctor, doctors);
+
+      if (doctID && selectedDoctor) {
+        // Valid doctID, ensure name is consistent
+        const expectedName = `${selectedDoctor.f_name} ${selectedDoctor.l_name}`;
+        if (doctname !== expectedName) {
+          setSearchParams({
+            ...searchParams,
+            clinic_id: clinic_id || "",
+            doct: doctID,
+            name: expectedName,
+            isSelectedDoctor: ParamsDoctor,
+          });
+        }
+      } else {
+        // Invalid or no doctID, default to first doctor
+        const firstDoctor = doctors[0];
         setSearchParams({
-          doct: firstDoct.user_id,
-          name: `${firstDoct.f_name} ${firstDoct.l_name}`,
+          clinic_id: clinic_id || "",
+          doct: firstDoctor.user_id,
+          name: `${firstDoctor.f_name} ${firstDoctor.l_name}`,
         });
       }
     }
-  }, [doctID, doctname, doctors, setSearchParams]);
+  }, [
+    doctors,
+    doctID,
+    doctname,
+    clinic_id,
+    setSearchParams,
+    searchParams,
+    ParamsDoctor,
+  ]);
 
   const fetchAppointments = async () => {
     setisLOad(true);
     const res = await GET(
       admin?.token,
-      `get_appointment_check_in_doct_date/${doctID}/${selectedDate}`
+      `get_appointment_check_in?start_date=${selectedDate}&end_date=${selectedDate}&doctor_id=${doctID}&clinic_id=${
+        clinic_id || ""
+      }`
     );
     setisLOad(false);
     return res.data;
   };
   // Query to fetch appointments
   const { data, error, isLoading } = useQuery({
-    queryKey: ["appointments-queue", doctID, selectedDate],
+    queryKey: ["appointments-queue", doctID, selectedDate, clinic_id],
     queryFn: fetchAppointments,
     refetchInterval: 30000, // Refetch every 30 seconds
     enabled: !!doctID,
@@ -91,9 +123,7 @@ const QueueList = () => {
 
   if (isLoading || doctorsLoading || isLOad) return <Loading />;
   if (error) return <Text color="red.500">Failed to load appointments</Text>;
-
   const appointments = data || [];
-
   // Separate current and next appointments
   const currentAppointment = appointments[0] || null;
   const nextAppointments = appointments.slice(1); // All but the first one
@@ -114,7 +144,7 @@ const QueueList = () => {
           <Image
             w={20}
             src={`${imageBaseURL}/${logo?.value}`}
-            fallbackSrc={"/vite.svg"}
+            fallbackSrc={"/admin/logo.png"}
           />
         </Box>
 
@@ -132,7 +162,9 @@ const QueueList = () => {
             color="blue.600"
             cursor={"pointer"}
             onClick={() => {
-              setselectDoc(!selectDoc);
+              if (!ParamsDoctor) {
+                setselectDoc(!selectDoc);
+              }
             }}
           >
             Doctor {doctname}

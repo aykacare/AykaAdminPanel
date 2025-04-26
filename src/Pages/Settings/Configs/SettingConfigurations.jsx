@@ -29,6 +29,7 @@ import ShowToast from "../../../Controllers/ShowToast";
 import UpdateConfigs from "./UpdateConfigs";
 import imageBaseURL from "../../../Controllers/image";
 import r from "../../../Controllers/configs";
+import MaskedCell from "../../../Components/MaskedCell";
 
 function SettingConfigurations({ groupName }) {
   const [SelectedData, setSelectedData] = useState();
@@ -102,7 +103,7 @@ function SettingConfigurations({ groupName }) {
                   >
                     ACTION
                   </Th>
-                  {["ID", "Titile", "Value", "Last Update"].map((item) => (
+                  {["Title", "Value", "Last Update"].map((item) => (
                     <Th
                       key={item}
                       color={useColorModeValue("#000", "#fff")}
@@ -145,7 +146,6 @@ function SettingConfigurations({ groupName }) {
                         />
                       </Flex>
                     </Td>
-                    <Td padding={"12px"}>{item.id}</Td>
                     <Td padding={"12px"}>{item.title}</Td>
                     <Td padding={"12px"} maxW={500} overflow={"hidden"}>
                       {item.id_name === "fav_icon" ||
@@ -166,6 +166,8 @@ function SettingConfigurations({ groupName }) {
                           isActive={item.value}
                           groupName={item.group_name}
                         />
+                      ) : [1, 2, 3, 30, 40].includes(item.id) ? (
+                        <MaskedCell value={item.title} />
                       ) : (
                         item.value
                       )}

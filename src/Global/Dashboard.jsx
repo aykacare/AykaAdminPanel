@@ -9,6 +9,8 @@ import imageBaseURL from "../Controllers/image";
 import admin from "../Controllers/admin";
 import Notification from "../Pages/Notification";
 import AppointmentStatusLog from "../Pages/Appointments/AppointmentLog";
+import LocationConfig from "../Pages/Location Settings";
+import DoctorProfile from "../Pages/Doctors/DoctorProfile";
 
 const Department = React.lazy(() => import("../Pages/Department/Index"));
 const Specialization = React.lazy(() =>
@@ -54,6 +56,16 @@ const LoginScreen = React.lazy(() =>
   import("../Pages/Settings/LoginScreen/LoginScreen")
 );
 const ReviewsPage = React.lazy(() => import("../Pages/Reviews/index"));
+const Clinics = React.lazy(() => import("../Pages/Clinics/Index"));
+const AddClinic = React.lazy(() => import("../Pages/Clinics/AddClinic"));
+const UpdateClinic = React.lazy(() => import("../Pages/Clinics/UpdateClinic"));
+const AppointmentPayments = React.lazy(() =>
+  import("../Pages/Payments/Payments")
+);
+const Invoices = React.lazy(() => import("../Pages/Invoices/Invoices"));
+const ReferPatient = React.lazy(() => import("../Pages/Patient Refer/Index"));
+const Banners = React.lazy(() => import("../Pages/Banners/Index"));
+const ContactUs = React.lazy(() => import("../Pages/Contact-us/Index"));
 
 export default function Dashboard() {
   const location = useLocation();
@@ -119,6 +131,7 @@ export default function Dashboard() {
           <Route path="/doctors/add" element={<AddDoctor />} />
           <Route path="/doctor/update/:id" element={<UpdateDoctor />} />
           <Route path="/doctor/:id" element={<UpdateDoctor />} />
+          <Route path="/doctor/profile" element={<DoctorProfile />} />
 
           {/* Appointments */}
           <Route path="/appointments" element={<Appointments />} />
@@ -140,7 +153,18 @@ export default function Dashboard() {
 
           {/* Transactions */}
           <Route path="/transactions" element={<Transactions />} />
+          <Route path="/payments" element={<AppointmentPayments />} />
+          <Route path="/invoices" element={<Invoices />} />
 
+          {/* clinics */}
+          <Route path="/clinics" element={<Clinics />} />
+          <Route path="/clinic/add" element={<AddClinic />} />
+          <Route path="clinic/update/:id" element={<UpdateClinic />} />
+          <Route path="clinic/update/:id" element={<UpdateClinic />} />
+          <Route
+            path="clinic/self/profile/update/:id"
+            element={<UpdateClinic />}
+          />
           {/* Misc */}
           <Route path="/patient-files" element={<Files />} />
           <Route path="/medicines" element={<Medicines />} />
@@ -150,9 +174,13 @@ export default function Dashboard() {
           <Route path="/coupons" element={<Coupons />} />
           <Route path="/doctor-reviews" element={<ReviewsPage />} />
           <Route path="/testimonials" element={<Testimonials />} />
+          <Route path="/banners" element={<Banners />} />
           <Route path="/login-screen" element={<LoginScreen />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/notification" element={<Notification />} />
+          <Route path="/location-settings" element={<LocationConfig />} />
+          <Route path="/patient-refer" element={<ReferPatient />} />
+          <Route path="/contact-us-form" element={<ContactUs />} />
         </Routes>
       </Suspense>
     </Box>

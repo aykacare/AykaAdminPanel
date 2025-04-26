@@ -35,6 +35,7 @@ export default function App() {
         return;
       }
       const permission = await Notification.requestPermission();
+
       if (permission === "granted") {
         const token = await getToken(messaging, {
           vapidKey: import.meta.env.VITE_FIREBASE_FCM_PUBLIC_KEY,
@@ -60,6 +61,25 @@ export default function App() {
         window.location.reload();
       }
     }
+  }, []);
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        console.log("Latitude:", position.coords.latitude);
+        console.log("Longitude:", position.coords.longitude);
+      },
+      (error) => {
+        if (error.code === 2) {
+          console.log("Error: Location information is unavailable.");
+        } else {
+          console.log("Error:", error.message);
+        }
+      }
+    );
   }, []);
   return (
     <ErrorBoundary>

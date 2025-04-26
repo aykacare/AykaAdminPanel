@@ -13,6 +13,7 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
+  Select,
   useToast,
 } from "@chakra-ui/react";
 import { useState } from "react";
@@ -21,20 +22,21 @@ import { useQueryClient } from "@tanstack/react-query";
 import { UPDATE } from "../../Controllers/ApiControllers";
 import ShowToast from "../../Controllers/ShowToast";
 import admin from "../../Controllers/admin";
+import useLocationData from "../../Hooks/UseLocationData";
 
 export default function UpdateStateModel({ isOpen, onClose, data }) {
   const [isLoading, setisLoading] = useState();
-
   const { register, handleSubmit, reset } = useForm();
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { countries } = useLocationData();
 
   const updateRole = async (Inputdata) => {
     let formData = {
       ...Inputdata,
       id: data.id,
     };
-    
+
     try {
       setisLoading(true);
       const res = await UPDATE(admin.token, "update_state", formData);
@@ -77,6 +79,20 @@ export default function UpdateStateModel({ isOpen, onClose, data }) {
                 placeholder="Title"
                 {...register("title", { required: true })}
               />
+            </FormControl>
+            <FormControl isRequired mt={5}>
+              <FormLabel>Country</FormLabel>
+              <Select
+                placeholder="Select Country"
+                {...register("country_id", { required: true })}
+                defaultValue={data.country_id}
+              >
+                {countries?.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.title}
+                  </option>
+                ))}
+              </Select>
             </FormControl>
           </Box>
         </ModalBody>

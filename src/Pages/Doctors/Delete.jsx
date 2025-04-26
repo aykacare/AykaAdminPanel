@@ -27,7 +27,7 @@ export default function DeleteDoctor({ isOpen, onClose, data }) {
     };
     try {
       setisLoading(true);
-      const res = await DELETE(admin.token, "delete_specialization", formData);
+      const res = await DELETE(admin.token, "delete_doctor", formData);
       setisLoading(false);
       if (res.response === 200) {
         ShowToast(toast, "success", "Doctor Deleted!");
@@ -54,7 +54,7 @@ export default function DeleteDoctor({ isOpen, onClose, data }) {
           <AlertDialogHeader fontSize="lg" fontWeight="semi-bold">
             Delete Doctor ({" "}
             <b>
-              {data?.id} , {data?.f_name} {data?.l_name}
+              #{data?.id} - {data?.name} 
             </b>{" "}
             )
           </AlertDialogHeader>

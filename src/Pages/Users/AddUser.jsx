@@ -37,6 +37,10 @@ import ISDCODEMODAL from "../../Components/IsdModal";
 import todayDate from "../../Controllers/today";
 import useHasPermission from "../../Hooks/HasPermission";
 import NotAuth from "../../Components/NotAuth";
+import { ClinicComboBox } from "../../Components/ClinicComboBox";
+import { useSelectedClinic } from "../../Context/SelectedClinic";
+import UseClinicsData from "../../Hooks/UseClinicsData";
+import useRolesData from "../../Hooks/UserRolesData";
 
 export default function AddUser() {
   const navigate = useNavigate();
@@ -47,9 +51,11 @@ export default function AddUser() {
   const [profilePicture, setprofilePicture] = useState(null);
   const [isd_code, setisd_code] = useState("+91");
   const { isOpen, onOpen, onClose } = useDisclosure();
-
   const inputRef = useRef();
-
+  const { selectedClinic } = useSelectedClinic();
+  const { clinicsData } = UseClinicsData();
+  const [selectedClinicID, setselectedClinicID] = useState();
+  const { Roles, rolesLoading, rolesError } = useRolesData();
   const handleFileChange = (event) => {
     const selectedFile = event.target.files[0];
     setprofilePicture(selectedFile);
@@ -63,6 +69,7 @@ export default function AddUser() {
     let formData = {
       image: profilePicture,
       isd_code: isd_code,
+      clinic_id: selectedClinicID?.id || "",
       ...data,
     };
     try {
@@ -84,7 +91,7 @@ export default function AddUser() {
   };
 
   const { hasPermission } = useHasPermission();
-  if (!hasPermission("USER_UPDATE")) return <NotAuth />;
+  if (!hasPermission("USER_ADD")) return <NotAuth />;
 
   return (
     <Box>
@@ -185,12 +192,44 @@ export default function AddUser() {
                   {...register("dob")}
                 />
               </FormControl>
+            </Flex>
+            <Flex gap={10} mt={5}>
               <FormControl>
                 <FormLabel>Gender</FormLabel>
                 <Select placeholder="Select Gender" {...register("gender")}>
                   <option value="Female">Female</option>{" "}
                   <option value="Male">Male</option>
                 </Select>
+              </FormControl>
+              <FormControl isRequired={admin.role.name === "Clinic"}>
+                <FormLabel>Role</FormLabel>
+                <Select
+                  placeholder={
+                    rolesLoading
+                      ? "Loading..."
+                      : rolesError
+                      ? "Can't Get Roles"
+                      : "Select Role"
+                  }
+                  {...register("role_id")}
+                >
+                  {Roles?.map((role) => (
+                    <option key={role.id} value={role.id}>
+                      {role.name}
+                    </option>
+                  ))}
+                </Select>
+              </FormControl>
+            </Flex>
+            <Flex gap={10} mt={5}>
+              <FormControl isRequired mt={5}>
+                <FormLabel>Clinic</FormLabel>
+                <ClinicComboBox
+                  data={clinicsData}
+                  name={"clinic"}
+                  defaultData={selectedClinic}
+                  setState={setselectedClinicID}
+                />
               </FormControl>
             </Flex>
 

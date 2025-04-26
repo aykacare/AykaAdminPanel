@@ -21,12 +21,11 @@ import { daysBack } from "../Controllers/dateConfig";
 
 const DateRangeCalender = ({ setDateRange, setLastDays, size, dateRange }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
-
   const initialStartDate = new Date();
   initialStartDate.setDate(initialStartDate.getDate() - daysBack);
 
   const [selectionRange, setSelectionRange] = useState({
-    startDate: initialStartDate,
+    startDate: new Date(),
     endDate: new Date(),
     key: "selection",
   });
@@ -69,13 +68,9 @@ const DateRangeCalender = ({ setDateRange, setLastDays, size, dateRange }) => {
         size={size || "sm"}
         borderRadius={6}
         value={
-          (dateRange?.startDate && dateRange?.endDate) ||
-          (selectionRange.startDate && selectionRange.endDate)
-            ? formatDateRange(
-                dateRange?.startDate || selectionRange?.startDate,
-                dateRange?.endDate || selectionRange?.endDate
-              )
-            : "Invalid date range"
+          dateRange?.startDate && dateRange?.endDate
+            ? formatDateRange(dateRange?.startDate, dateRange?.endDate)
+            : "Select Date Range"
         }
         cursor="pointer"
         w={"fit-content"}

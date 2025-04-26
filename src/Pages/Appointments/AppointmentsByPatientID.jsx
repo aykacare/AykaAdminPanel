@@ -46,7 +46,7 @@ export default function AppointmentsByPatientID({ patientID }) {
   };
 
   const getData = async () => {
-    const url = `get_appointment/patient/${patientID}`;
+    const url = `get_appointments?patient_id=${patientID}`;
     const res = await GET(admin.token, url);
     const rearrangedArray = res?.data.map((item) => {
       const {

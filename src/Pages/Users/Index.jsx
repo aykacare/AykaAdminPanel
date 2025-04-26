@@ -7,8 +7,10 @@ import {
   Input,
   Radio,
   RadioGroup,
-  Skeleton, theme,
-  useToast
+  Skeleton,
+  theme,
+  useDisclosure,
+  useToast,
 } from "@chakra-ui/react";
 import { useEffect, useRef, useState } from "react";
 import { FaTrash } from "react-icons/fa";
@@ -25,6 +27,8 @@ import NotAuth from "../../Components/NotAuth";
 import useDebounce from "../../Hooks/UseDebounce";
 import Pagination from "../../Components/Pagination";
 import useRolesData from "../../Hooks/UserRolesData";
+import { useSelectedClinic } from "../../Context/SelectedClinic";
+import DeleteUser from "./DeleteUser";
 
 const ITEMS_PER_PAGE = 50;
 
@@ -38,24 +42,24 @@ const transformData = (data) => {
   return data?.map((item) => {
     const {
       id,
+      clinic_id,
       f_name,
       l_name,
       phone,
-      gender,
-      dob,
       email,
       image,
       wallet_amount,
       created_at,
+      role_name,
     } = item;
 
     return {
       id: id,
+      clinic_id,
       image: image,
       name: `${f_name} ${l_name}`,
+      role_name,
       Phone: `${phone}`,
-      Gender: gender,
-      DateOfBirth: moment(dob).format("DD MMM YYYY"),
       Email: email,
       "Wallet Balance": wallet_amount,
       CreatedAt: moment(created_at).format("DD MMM YYYY hh:mm a"),
@@ -73,13 +77,20 @@ export default function Users() {
   const debouncedSearchQuery = useDebounce(searchQuery, 1000);
   const { startIndex, endIndex } = getPageIndices(page, ITEMS_PER_PAGE);
   const boxRef = useRef(null);
-  const { rolesData, rolesLoading } = useRolesData();
+  const { Roles, rolesLoading } = useRolesData();
   const [selectedRole, setSelectedRole] = useState("");
-
+  const { selectedClinic } = useSelectedClinic();
+  const {
+    isOpen: DeleteisOpen,
+    onOpen: DeleteonOpen,
+    onClose: DeleteonClose,
+  } = useDisclosure();
   const getData = async () => {
     const res = await GET(
       admin.token,
-      `get_users/page?start=${startIndex}&end=${endIndex}&search=${debouncedSearchQuery}&role_id=${selectedRole}`
+      `get_users/page?start=${startIndex}&end=${endIndex}&search=${debouncedSearchQuery}&role_id=${selectedRole}&clinic_id=${
+        selectedClinic?.id || ""
+      }`
     );
     return {
       data: res.data,
@@ -88,7 +99,13 @@ export default function Users() {
   };
 
   const { isLoading, data, error } = useQuery({
-    queryKey: ["users", page, debouncedSearchQuery, selectedRole],
+    queryKey: [
+      "users",
+      page,
+      debouncedSearchQuery,
+      selectedRole,
+      selectedClinic,
+    ],
     queryFn: getData,
   });
 
@@ -170,7 +187,7 @@ export default function Users() {
             <RadioGroup onChange={setSelectedRole} value={selectedRole}>
               <Flex direction="row" gap={4} wrap="wrap">
                 <Radio value={""}>All</Radio>
-                {rolesData.map((role) => (
+                {Roles.map((role) => (
                   <Radio key={role.id} value={role.id.toString()}>
                     {role.name}
                   </Radio>
@@ -185,6 +202,7 @@ export default function Users() {
               <YourActionButton
                 onClick={handleActionClick}
                 navigate={navigate}
+                DeleteonOpen={DeleteonOpen}
               />
             }
           />
@@ -197,6 +215,14 @@ export default function Users() {
           totalPages={totalPage}
         />
       </Flex>
+
+      {DeleteisOpen && (
+        <DeleteUser
+          isOpen={DeleteisOpen}
+          onClose={DeleteonClose}
+          data={SelectedData}
+        />
+      )}
     </Box>
   );
 }

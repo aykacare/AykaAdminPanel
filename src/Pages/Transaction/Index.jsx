@@ -8,11 +8,6 @@ import {
   Input,
   Skeleton,
   useToast,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
 } from "@chakra-ui/react";
 import { FiEdit } from "react-icons/fi";
 import { useQuery } from "@tanstack/react-query";
@@ -21,15 +16,12 @@ import { GET } from "../../Controllers/ApiControllers";
 import admin from "../../Controllers/admin";
 import moment from "moment";
 import { Link } from "react-router-dom";
-import Invoices from "../Invoices/Invoices";
-import AppointmentPayments from "../Payments/Payments";
 import Pagination from "../../Components/Pagination";
 import useDebounce from "../../Hooks/UseDebounce";
 import useHasPermission from "../../Hooks/HasPermission";
 import NotAuth from "../../Components/NotAuth";
 import DateRangeCalender from "../../Components/DateRangeCalender";
-import { daysBack } from "../../Controllers/dateConfig";
-
+import { useSelectedClinic } from "../../Context/SelectedClinic";
 const txnBadge = (txn) => {
   switch (txn) {
     case "Credited":
@@ -58,30 +50,11 @@ const txnBadge = (txn) => {
       );
   }
 };
-
 export default function Transactions() {
   return (
-    <Box>
-      <Tabs>
-        <TabList>
-          <Tab>All Transactions</Tab>
-          <Tab>Appointment Payments</Tab>
-          <Tab>Invoices</Tab>
-        </TabList>
-
-        <TabPanels>
-          <TabPanel>
-            <AllTransactions />
-          </TabPanel>
-          <TabPanel>
-            <AppointmentPayments />
-          </TabPanel>
-          <TabPanel>
-            <Invoices />
-          </TabPanel>
-        </TabPanels>
-      </Tabs>
-    </Box>
+    <>
+      <AllTransactions />
+    </>
   );
 }
 
@@ -90,8 +63,7 @@ const getPageIndices = (currentPage, itemsPerPage) => {
   let endIndex = startIndex + itemsPerPage - 1;
   return { startIndex, endIndex };
 };
-const sevenDaysBack = moment().subtract(daysBack, "days").format("YYYY-MM-DD");
-const today = moment().format("YYYY-MM-DD");
+
 function AllTransactions() {
   const { hasPermission } = useHasPermission();
   const [page, setPage] = useState(1);
@@ -101,19 +73,19 @@ function AllTransactions() {
   const toast = useToast();
   const id = "Errortoast";
   const [dateRange, setdateRange] = useState({
-    startDate: sevenDaysBack,
-    endDate: today,
+    startDate: null,
+    endDate: null,
   });
 
-  const start_date = moment(dateRange.startDate).format("YYYY-MM-DD");
-  const end_date = moment(dateRange.endDate).format("YYYY-MM-DD");
+  const { selectedClinic } = useSelectedClinic();
 
   const getData = async () => {
     const { startIndex, endIndex } = getPageIndices(page, 50);
-    const url =
-      admin.role.name === "Doctor"
-        ? `get_all_transactions/doctor_id/page?start=${startIndex}&end=${endIndex}&search=${debouncedSearchQuery}&start_date=${start_date}&end_date=${end_date}&doctor_id=${admin.id}`
-        : `get_all_transactions/page?start=${startIndex}&end=${endIndex}&search=${debouncedSearchQuery}&start_date=${start_date}&end_date=${end_date}`;
+    const url = `get_all_transaction?start=${startIndex}&end=${endIndex}&search=${debouncedSearchQuery}&start_date=${
+      dateRange.startDate || ""
+    }&end_date=${dateRange.endDate || ""}&doctor_id=${
+      admin.role.name === "Doctor" ? admin.id : ""
+    }&clinic_id=${selectedClinic?.id || ""}`;
     const res = await GET(admin.token, url);
     const rearrangedTransactions = res?.data.map((transaction) => {
       const {
@@ -165,7 +137,13 @@ function AllTransactions() {
   };
 
   const { isLoading, data, error } = useQuery({
-    queryKey: ["transactions", page, debouncedSearchQuery, dateRange],
+    queryKey: [
+      "transactions",
+      page,
+      debouncedSearchQuery,
+      dateRange,
+      selectedClinic,
+    ],
     queryFn: getData,
   });
 

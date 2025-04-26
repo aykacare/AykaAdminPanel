@@ -117,7 +117,7 @@ function AppointmentChart({
         backgroundColor: getTransparentColor(theme.colors.blue[500], 5), // Transparent fill color
         borderWidth: 2,
         fill: "origin",
-        tension: 0.2, // Curved lines
+        tension: 0.4, // Curved lines
       },
       {
         label: "Cancelled",
@@ -128,7 +128,7 @@ function AppointmentChart({
         backgroundColor: getTransparentColor(theme.colors.red[500], 5), // Transparent fill color
         borderWidth: 2,
         fill: true,
-        tension: 0.2, // Curved lines
+        tension: 0.4, // Curved lines
       },
       {
         label: "Compleated",
@@ -139,7 +139,7 @@ function AppointmentChart({
         backgroundColor: getTransparentColor(theme.colors.green[500], 5), // Transparent fill color
         borderWidth: 2,
         fill: true,
-        tension: 0.2, // Curved lines
+        tension: 0.4, // Curved lines
       },
     ],
   };

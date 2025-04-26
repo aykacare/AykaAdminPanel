@@ -25,15 +25,24 @@ import ShowToast from "../../Controllers/ShowToast";
 import admin from "../../Controllers/admin";
 import QRCodeScanner from "../../Components/QrScanner";
 import todayDate from "../../Controllers/today";
+import { useSelectedClinic } from "../../Context/SelectedClinic";
+import moment from "moment";
+
+const isOwnAppointment = (appointmentData, selectedClinic) => {
+  if (admin.role.name === "Admin" || admin.role.name === "Super Admin") {
+    return true; // Admins can check in any appointment
+  }
+  return appointmentData?.clinic_id === selectedClinic.id;
+};
 
 export default function AddCheckin({ isOpen, onClose }) {
   const [isLoading, setisLoading] = useState(false);
   const [appointmentData, setappointmentData] = useState();
   const [showQRScanner, setShowQRScanner] = useState(false); // State for QR scanner visibility
-
   const { register, handleSubmit, reset, setValue, getValues } = useForm(); // Added setValue here
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { selectedClinic } = useSelectedClinic();
 
   const onqrScan = (qrData) => {
     // Use setValue to update form inputs
@@ -46,12 +55,11 @@ export default function AddCheckin({ isOpen, onClose }) {
 
   const getAppData = async () => {
     const { appointment_id } = getValues();
-
     setisLoading(true);
     try {
       const res = await GET(admin.token, `get_appointment/${appointment_id}`);
-      setisLoading(false);
       console.log(res);
+      setisLoading(false);
       if (res.data === null) {
         ShowToast(toast, "error", "Appointment not found");
         // Reset values if not found
@@ -59,17 +67,22 @@ export default function AddCheckin({ isOpen, onClose }) {
         setValue("date", "");
         setValue("time", "");
         return;
+      } else if (!isOwnAppointment(res.data, selectedClinic)) {
+        return ShowToast(
+          toast,
+          "error",
+          "Appointment not found in your clinic"
+        );
+      } else {
+        let appointmentData = res.data;
+        setappointmentData(appointmentData);
+        setValue("appointment_id", appointmentData?.id || "");
+        setValue("date", appointmentData?.date || "");
+        setValue("time", appointmentData?.time_slots || "");
       }
-      let appointmentData = res.data;
-      setappointmentData(appointmentData);
-      // Use setValue to set form values programmatically
-      setValue("appointment_id", appointmentData?.id || "");
-      setValue("date", appointmentData?.date || "");
-      setValue("time", appointmentData?.time_slots || "");
     } catch (error) {
       setisLoading(false);
-      ShowToast(toast, "error", "Appointment not found");
-      // Reset values if not found
+      ShowToast(toast, "error", "Appointment not foundffff");
       setValue("appointment_id", "");
       setValue("date", "");
       setValue("time", "");
@@ -85,12 +98,14 @@ export default function AddCheckin({ isOpen, onClose }) {
         "Video Consultations cannot be checked in"
       );
     }
-
+    const formdata = {
+      ...Inputdata,
+      time: moment(Inputdata.time, "HH:mm").format("HH:mm:ss"),
+    };
     try {
       setisLoading(true);
-      const res = await ADD(admin.token, "add_appointment_checkin", Inputdata);
+      const res = await ADD(admin.token, "add_appointment_checkin", formdata);
       setisLoading(false);
-
       if (res.response === 200) {
         ShowToast(toast, "success", "Added!");
         queryClient.invalidateQueries("checkins");
@@ -98,6 +113,7 @@ export default function AddCheckin({ isOpen, onClose }) {
         onClose();
       } else {
         ShowToast(toast, "error", res.message);
+        queryClient.invalidateQueries("checkins");
       }
     } catch (error) {
       setisLoading(false);

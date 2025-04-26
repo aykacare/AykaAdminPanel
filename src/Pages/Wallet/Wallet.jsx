@@ -28,7 +28,10 @@ export default function Wallet({ userID }) {
   const toast = useToast();
   const id = "Errortoast";
   const getData = async () => {
-    const res = await GET(admin.token, `get_wallet_txn/user/${userID}`);
+    const res = await GET(
+      admin.token,
+      `get_all_transaction?is_wallet_txn=1&user_id=${userID}`
+    );
     const rearrangedArray = res?.data.map((transaction) => {
       const {
         id,
@@ -155,7 +158,7 @@ export default function Wallet({ userID }) {
                 size={"sm"}
                 colorScheme="blue"
                 onClick={() => {
-                    onOpen()
+                  onOpen();
                 }}
               >
                 Recharge Wallet

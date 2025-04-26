@@ -28,10 +28,7 @@ import moment from "moment";
 import useDebounce from "../../Hooks/UseDebounce";
 import DateRangeCalender from "../../Components/DateRangeCalender";
 import Pagination from "../../Components/Pagination";
-import { daysBack } from "../../Controllers/dateConfig";
-
-const sevenDaysBack = moment().subtract(daysBack, "days").format("YYYY-MM-DD");
-const today = moment().format("YYYY-MM-DD");
+import { useSelectedClinic } from "../../Context/SelectedClinic";
 
 const getPageIndices = (currentPage, itemsPerPage) => {
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -48,11 +45,10 @@ export default function Checkin() {
   const [searchQuery, setsearchQuery] = useState("");
   const debouncedSearchQuery = useDebounce(searchQuery, 1000);
   const [dateRange, setdateRange] = useState({
-    startDate: sevenDaysBack,
-    endDate: today,
+    startDate: null,
+    endDate: null,
   });
-  const start_date = moment(dateRange.startDate).format("YYYY-MM-DD");
-  const end_date = moment(dateRange.endDate).format("YYYY-MM-DD");
+  const { selectedClinic } = useSelectedClinic();
 
   const {
     isOpen: EditisOpen,
@@ -70,18 +66,17 @@ export default function Checkin() {
   const toast = useToast();
   const id = "Errortoast";
   const getData = async () => {
-    const url =
-      admin.role.name === "Doctor"
-        ? `get_appointment_check_in_page?start=${startIndex}&end=${endIndex}&search=${debouncedSearchQuery}&start_date=${start_date}&end_date=${end_date}&doctor_id=${admin.id}`
-        : `get_appointment_check_in_page?start=${startIndex}&end=${endIndex}&search=${debouncedSearchQuery}&start_date=${start_date}&end_date=${end_date}`;
+    const url = `get_appointment_check_in?start=${startIndex}&end=${endIndex}&search=${debouncedSearchQuery}&start_date=${
+      dateRange.startDate || ""
+    }&end_date=${dateRange.endDate || ""}&doctor_id=${
+      admin.role.name === "Doctor" ? admin.id : ""
+    }&clinic_id=${selectedClinic?.id || ""}`;
     const res = await GET(admin.token, url);
-
-    console.log(res);
     const rearrangedArray = res?.data.map((doctor) => {
       const {
         id,
         appointment_id,
-        time, 
+        time,
         date,
         created_at,
         updated_at,
@@ -89,9 +84,11 @@ export default function Checkin() {
         doct_l_name,
         patient_f_name,
         patient_l_name,
+        clinic_id,
       } = doctor;
       return {
         id,
+        clinic_id,
         app_id: (
           <Link to={`/appointment/${appointment_id}`}>
             <Flex gap={1} align={"center"}>
@@ -115,7 +112,13 @@ export default function Checkin() {
   };
 
   const { isLoading, data, error } = useQuery({
-    queryKey: ["checkins", page, debouncedSearchQuery, dateRange],
+    queryKey: [
+      "checkins",
+      page,
+      debouncedSearchQuery,
+      dateRange,
+      selectedClinic?.id,
+    ],
     queryFn: getData,
   });
 
@@ -162,19 +165,21 @@ export default function Checkin() {
       ) : (
         <Box>
           <Flex mb={5} justify={"space-between"} align={"center"}>
-            <Input
-              size={"md"}
-              placeholder="Search"
-              w={400}
-              maxW={"50vw"}
-              onChange={(e) => setsearchQuery(e.target.value)}
-              value={searchQuery}
-            />
-            <DateRangeCalender
-              dateRange={dateRange}
-              setDateRange={setdateRange}
-              size={"md"}
-            />
+            <Flex gap={4}>
+              <Input
+                size={"md"}
+                placeholder="Search"
+                w={400}
+                maxW={"50vw"}
+                onChange={(e) => setsearchQuery(e.target.value)}
+                value={searchQuery}
+              />
+              <DateRangeCalender
+                dateRange={dateRange}
+                setDateRange={setdateRange}
+                size={"md"}
+              />
+            </Flex>
             <Box>
               <Flex align={"center"} gap={5}>
                 {" "}
@@ -183,7 +188,17 @@ export default function Checkin() {
                   colorScheme="blue"
                   onClick={() => {
                     const baseUrl = `${window.location.protocol}//${window.location.host}`;
-                    window.open(`${baseUrl}/admin/queue`, "_blank");
+                    const isDoctor = admin.role.name.toLowerCase() === "doctor";
+                    const queryParams = new URLSearchParams({
+                      clinic_id: selectedClinic?.id || "",
+                      ...(isDoctor && { doct: admin.id }),
+                      ...(isDoctor && { isSelectedDoctor: admin.id }),
+                    }).toString();
+
+                    window.open(
+                      `${baseUrl}/admin/queue?${queryParams}`,
+                      "_blank"
+                    );
                   }}
                   rightIcon={<BiLinkExternal />}
                 >

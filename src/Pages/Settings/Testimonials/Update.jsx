@@ -40,11 +40,27 @@ export default function UpdateTastimonials({ isOpen, onClose, data }) {
   const { register, handleSubmit, reset } = useForm();
   const queryClient = useQueryClient();
   const toast = useToast();
-
   const handleDrop = (event) => {
     event.preventDefault();
-
     const file = event.dataTransfer.files[0];
+    const allowedTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/svg+xml",
+    ];
+    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    if (!file) return;
+    if (!allowedTypes.includes(file.type)) {
+      return ShowToast(
+        toast,
+        "error",
+        "Only JPEG, JPG, PNG, or SVG files are allowed."
+      );
+    }
+    if (file.size > maxSize) {
+      return ShowToast(toast, "error", "File size should not exceed 5MB.");
+    }
     setSelectedFile(file);
   };
 

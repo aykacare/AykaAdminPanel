@@ -1,21 +1,26 @@
-﻿/* eslint-disable react/prop-types */
+﻿/* eslint-disable react-hooks/rules-of-hooks */
+/* eslint-disable react/prop-types */
 import {
+  Alert,
+  AlertDescription,
+  AlertIcon,
+  Avatar,
   Badge,
   Box,
   Button,
   Checkbox,
   CheckboxGroup,
+  Divider,
   Flex,
-  IconButton,
+  Grid,
   Input,
   Skeleton,
-  theme,
+  Text,
+  useColorModeValue,
   useDisclosure,
   useToast,
 } from "@chakra-ui/react";
-import { FiEdit } from "react-icons/fi";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import DynamicTable from "../../Components/DataTable";
 import { GET } from "../../Controllers/ApiControllers";
 import admin from "../../Controllers/admin";
 import { useNavigate } from "react-router-dom";
@@ -28,19 +33,20 @@ import useDebounce from "../../Hooks/UseDebounce";
 import ErrorPage from "../../Components/ErrorPage";
 import useHasPermission from "../../Hooks/HasPermission";
 import NotAuth from "../../Components/NotAuth";
-import moment from "moment";
 import { RefreshCwIcon } from "lucide-react";
 import t from "../../Controllers/configs";
 import DateRangeCalender from "../../Components/DateRangeCalender";
-import { daysBack } from "../../Controllers/dateConfig";
+import { useSelectedClinic } from "../../Context/SelectedClinic";
+import getStatusColor from "../../Hooks/GetStatusColor";
+import imageBaseURL from "../../Controllers/image";
+
+
 
 const getPageIndices = (currentPage, itemsPerPage) => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   let endIndex = startIndex + itemsPerPage - 1;
   return { startIndex, endIndex };
 };
-const sevenDaysBack = moment().subtract(daysBack, "days").format("YYYY-MM-DD");
-const today = moment().format("YYYY-MM-DD");
 
 export default function Appointments() {
   const navigate = useNavigate();
@@ -52,88 +58,43 @@ export default function Appointments() {
   const [searchQuery, setsearchQuery] = useState("");
   const debouncedSearchQuery = useDebounce(searchQuery, 1000);
   const [statusFilters, setStatusFilters] = useState([]); // Track status filters
+  const [typeFilters, settypeFilters] = useState([]); // Track type filters
   const { startIndex, endIndex } = getPageIndices(page, 50);
   const { hasPermission } = useHasPermission();
   const queryClient = useQueryClient();
+  const { selectedClinic } = useSelectedClinic();
+  const [cacellationReq, setCacellationReq] = useState([]);
   const [dateRange, setdateRange] = useState({
-    startDate: sevenDaysBack,
-    endDate: today,
+    startDate: null,
+    endDate: null,
   });
 
-  const start_date = moment(dateRange.startDate).format("YYYY-MM-DD");
-  const end_date = moment(dateRange.endDate).format("YYYY-MM-DD");
-
   const handleStatusChange = (selectedStatuses) => {
-    setStatusFilters(selectedStatuses); // Update the state when checkboxes change
+    setStatusFilters(selectedStatuses || ""); // Update the state when checkboxes change
+  };
+  const handleCancellationChange = (selectedStatuses) => {
+    setCacellationReq(selectedStatuses || ""); // Update the state when checkboxes change
+  };
+  const handleTypeChange = (selectedType) => {
+    settypeFilters(selectedType || ""); // Update the state when checkboxes change
   };
 
   const getData = async () => {
-    const url =
-      admin.role.name === "Doctor"
-        ? `get_appointments/doctor_id/page?start=${startIndex}&end=${endIndex}&doctor_id=${
-            admin.id
-          }&search=${debouncedSearchQuery}&start_date=${start_date}&end_date=${end_date}&status=${statusFilters.join(
-            ", "
-          )}`
-        : `get_appointments/page?start=${startIndex}&end=${endIndex}&search=${debouncedSearchQuery}&start_date=${start_date}&end_date=${end_date}&status=${statusFilters.join(
-            ", "
-          )}`;
+    const url = `get_appointments?start=${startIndex}&end=${endIndex}&search=${debouncedSearchQuery}&start_date=${
+      dateRange.startDate || ""
+    }&end_date=${dateRange.endDate || ""}&status=${statusFilters.join(
+      ", "
+    )}&type=${typeFilters.join(
+      ", "
+    )}&current_cancel_req_status=${cacellationReq.join(", ")}&doctor_id=${
+      admin.role.name === "Doctor" ? admin.id : ""
+    }&clinic_id=${selectedClinic?.id || ""}`;
     await t();
     const res = await GET(admin.token, url);
-    const rearrangedArray = res?.data.map((item) => {
-      const {
-        id,
-        patient_id,
-        status,
-        date,
-        time_slots,
-        type,
-        payment_status,
-        current_cancel_req_status,
-        patient_f_name,
-        patient_l_name,
-        patient_phone,
-        doct_f_name,
-        doct_l_name,
-        doct_image,
-        source,
-      } = item;
-
-      return {
-        id: id,
-        image: doct_image,
-        Doctor: `${doct_f_name} ${doct_l_name}`,
-        Patient: `${patient_f_name} ${patient_l_name} - #${patient_id}`,
-        phone: patient_phone,
-        Status: getStatusBadge(status),
-        Date: moment(date).format("DD MMM YYYY"),
-        "Time Slots": moment(time_slots, "HH:mm:ss").format("hh:mm A"),
-        Type:
-          type === "Emergency" ? (
-            <Badge colorScheme="red">{type}</Badge>
-          ) : (
-            <Badge colorScheme="green">{type}</Badge>
-          ),
-        "Payment Status":
-          payment_status === "Paid" ? (
-            <Badge colorScheme="green">{payment_status}</Badge>
-          ) : payment_status === "Refunded" ? (
-            <Badge colorScheme="blue">{payment_status}</Badge>
-          ) : (
-            <Badge colorScheme="red">{"Not Paid"}</Badge>
-          ),
-        "Cancellation Status": getCancellationStatusBadge(
-          current_cancel_req_status
-        ),
-        source,
-        filterStatus: status,
-        current_cancel_req_status: current_cancel_req_status,
-      };
-    });
 
     return {
-      data: rearrangedArray,
       total_record: res.total_record,
+      maindata: res.data,
     };
   };
 
@@ -142,8 +103,11 @@ export default function Appointments() {
       "appointments",
       page,
       debouncedSearchQuery,
-      statusFilters,
+      JSON.stringify(statusFilters),
+      JSON.stringify(typeFilters),
+      JSON.stringify(cacellationReq),
       dateRange,
+      selectedClinic?.id,
     ],
     queryFn: getData,
   });
@@ -154,12 +118,8 @@ export default function Appointments() {
   const totalPage = Math.ceil(data?.total_record / 50);
 
   useEffect(() => {
-    if (boxRef.current) {
-      boxRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }
+    if (!boxRef.current) return;
+    boxRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [page]);
 
   if (error) {
@@ -174,6 +134,7 @@ export default function Appointments() {
         position: "top",
       });
     }
+
     return <ErrorPage errorCode={error.name} />;
   }
 
@@ -181,93 +142,257 @@ export default function Appointments() {
 
   return (
     <Box ref={boxRef}>
+      <Flex mb={5} justify={"space-between"} align={"center"}>
+        <Flex align={"center"} gap={4}>
+          <Input
+            size={"md"}
+            placeholder="Search"
+            w={400}
+            maxW={"50vw"}
+            onChange={(e) => setsearchQuery(e.target.value)}
+            value={searchQuery}
+          />
+          <DateRangeCalender
+            dateRange={dateRange}
+            setDateRange={setdateRange}
+            size={"md"}
+          />
+        </Flex>
+        <Box>
+          <Button
+            size={"sm"}
+            colorScheme="blue"
+            onClick={() => {
+              onOpen();
+            }}
+            isDisabled={!hasPermission("APPOINTMENT_ADD")}
+          >
+            Add New
+          </Button>
+        </Box>
+      </Flex>
+      {/* Status checkboxes */}
+      <Flex alignItems={"top"} justifyContent={"space-between"}>
+        {" "}
+        <CheckboxGroup
+          colorScheme="blue"
+          onChange={handleStatusChange}
+          value={statusFilters}
+        >
+          <Flex mb={5} gap={4} alignItems={"center"}>
+            <Text fontSize={"md"} fontWeight={600}>
+              Status -{" "}
+            </Text>
+            <Checkbox value="Confirmed">Confirmed</Checkbox>
+            <Checkbox value="Visited">Visited</Checkbox>
+            <Checkbox value="Completed">Completed</Checkbox>
+            <Checkbox value="Pending">Pending</Checkbox>
+            <Checkbox value="Cancelled">Cancelled</Checkbox>
+            <Checkbox value="Rejected">Rejected</Checkbox>
+          </Flex>
+        </CheckboxGroup>{" "}
+        <Button
+          isLoading={isFetching || isRefetching}
+          size={"sm"}
+          colorScheme="blue"
+          onClick={() => {
+            queryClient.invalidateQueries(
+              ["appointments", page, debouncedSearchQuery, statusFilters],
+              { refetchInactive: true }
+            );
+          }}
+          rightIcon={<RefreshCwIcon size={14} />}
+        >
+          Refresh Table
+        </Button>
+      </Flex>
+      <CheckboxGroup
+        colorScheme="blue"
+        onChange={handleCancellationChange}
+        value={cacellationReq}
+      >
+        <Flex mb={5} gap={4} alignItems={"center"}>
+          <Text fontSize={"md"} fontWeight={600}>
+            Cancellation Request -{" "}
+          </Text>
+          <Checkbox value="Initiated">Initiated</Checkbox>
+          <Checkbox value="Processing">Processing</Checkbox>
+          <Checkbox value="Approved">Approved</Checkbox>
+          <Checkbox value="Rejected">Rejected</Checkbox>
+        </Flex>
+      </CheckboxGroup>{" "}
+      <CheckboxGroup
+        colorScheme="blue"
+        onChange={handleTypeChange}
+        value={typeFilters}
+      >
+        <Flex mb={5} gap={4} alignItems={"center"}>
+          <Text fontSize={"md"} fontWeight={600}>
+            Type -{" "}
+          </Text>
+          {["OPD", "Video Consultant", "Emergency"].map((type) => (
+            <Checkbox value={type} key={type}>
+              {type}
+            </Checkbox>
+          ))}
+        </Flex>
+      </CheckboxGroup>{" "}
       {isLoading || !data ? (
         <Box>
-          <Flex mb={5} justify={"space-between"}>
-            <Skeleton w={400} h={8} />
-            <Skeleton w={200} h={8} />
-          </Flex>
           {/* Loading skeletons */}
-          {[...Array(10)].map((_, index) => (
-            <Skeleton key={index} h={10} w={"100%"} mt={2} />
-          ))}
+          <Grid
+            templateColumns={{
+              base: "1fr",
+              md: "repeat(2, 1fr)",
+              xl: "repeat(3, 1fr)",
+              "2xl": "repeat(4, 1fr)",
+            }}
+            gap={{ base: 4, md: 4, xl: 8 }}
+            p={4}
+          >
+            {" "}
+            {[...Array(16)].map((_, index) => (
+              <Skeleton key={index} h={32} mt={2} borderRadius={6} />
+            ))}
+          </Grid>
+        </Box>
+      ) : data?.maindata?.length ? (
+        <Box>
+          <Grid
+            templateColumns={{
+              base: "1fr",
+              md: "repeat(2, 1fr)",
+              xl: "repeat(3, 1fr)",
+              "2xl": "repeat(4, 1fr)",
+            }}
+            gap={{ base: 4, md: 4, xl: 8 }}
+            p={4}
+            px={0}
+          >
+            {data?.maindata?.map((appointment) => (
+              <Box
+                position={"relative"}
+                bg={useColorModeValue("white", "gray.900")}
+                key={appointment.id}
+                p={4}
+                borderRadius="md"
+                boxShadow="lg"
+                border={"2px solid"}
+                borderColor={getStatusColor(appointment.status)}
+                cursor={"pointer"}
+                transition={"transform 0.2s ease-in-out"}
+                _hover={{
+                  transform: "translateY(-3px) scale(1.02)",
+                  transition: "transform 0.3s ease-in-out",
+                  boxShadow: "xl",
+                }}
+                onClick={() => navigate(`/appointment/${appointment.id}`)}
+              >
+                <Badge
+                  colorScheme="pink"
+                  py={"5px"}
+                  fontSize={"sm"}
+                  position={"absolute"}
+                  right={1}
+                  top={1}
+                  borderRadius={4}
+                >
+                  #{appointment.id}
+                </Badge>
+                <Flex gap={4}>
+                  <Avatar src={`${imageBaseURL}/${appointment.doct_image}`} />{" "}
+                  <Box>
+                    {" "}
+                    <Text fontWeight={"600"}>
+                      Doctor: {appointment.doct_f_name}{" "}
+                      {appointment.doct_l_name}
+                    </Text>{" "}
+                    <Text>
+                      Patient: {appointment.patient_f_name}{" "}
+                      {appointment.patient_l_name} #{appointment.patient_id}
+                    </Text>
+                  </Box>
+                </Flex>
+                <Divider my={3} />
+
+                <Flex justify={"space-between"} align={"center"}>
+                  {" "}
+                  <Text fontSize={"sm"} fontWeight={"600"} color={"green.500"}>
+                    Date: {appointment.date}
+                  </Text>
+                  <Text fontSize={"sm"} fontWeight={"600"} color={"green.500"}>
+                    Time: {appointment.time_slots}
+                  </Text>
+                </Flex>
+                <Flex justify={"space-between"} align={"center"} mt={2}>
+                  {" "}
+                  <Text>
+                    Type:{" "}
+                    {appointment.type === "Emergency" ? (
+                      <Badge colorScheme="red" py={"5px"}>
+                        {appointment.type}
+                      </Badge>
+                    ) : appointment.type === "Video Consultant" ? (
+                      <Badge colorScheme="purple" py={"5px"}>
+                        {appointment.type}
+                      </Badge>
+                    ) : (
+                      <Badge colorScheme="green" py={"5px"}>
+                        {appointment.type}
+                      </Badge>
+                    )}
+                  </Text>
+                  <Text>Status: {getStatusBadge(appointment.status)}</Text>
+                </Flex>
+                <Flex justify={"space-between"} align={"center"} mt={2}>
+                  {" "}
+                  <Text fontSize={"sm"}>
+                    Payment :{" "}
+                    {appointment?.payment_status === "Paid" ? (
+                      <Badge colorScheme="green">
+                        {appointment.payment_status}
+                      </Badge>
+                    ) : appointment.payment_status === "Refunded" ? (
+                      <Badge colorScheme="blue">
+                        {appointment.payment_status}
+                      </Badge>
+                    ) : (
+                      <Badge colorScheme="red">{"Not Paid"}</Badge>
+                    )}
+                  </Text>
+                  <Text fontSize={"sm"}>
+                    Source:{" "}
+                    <Badge
+                      colorScheme={
+                        appointment.source === "Web" ? "purple" : "blue"
+                      }
+                    >
+                      {appointment.source}
+                    </Badge>
+                  </Text>
+                </Flex>
+                <Flex justify={"space-between"} align={"center"} mt={2}>
+                  {" "}
+                  <Text fontSize={"sm"} fontWeight={"600"}>
+                    Clinic ID : #{appointment.clinic_id}
+                  </Text>
+                  <Text fontSize={"sm"}>
+                    Cancel Req :{" "}
+                    {getCancellationStatusBadge(
+                      appointment.current_cancel_req_status
+                    )}
+                  </Text>
+                </Flex>
+              </Box>
+            ))}
+          </Grid>
         </Box>
       ) : (
-        <Box>
-          <Flex mb={5} justify={"space-between"} align={"center"}>
-            <Flex align={"center"} gap={4}>
-              <Input
-                size={"md"}
-                placeholder="Search"
-                w={400}
-                maxW={"50vw"}
-                onChange={(e) => setsearchQuery(e.target.value)}
-                value={searchQuery}
-              />
-              <DateRangeCalender
-                dateRange={dateRange}
-                setDateRange={setdateRange}
-                size={"md"}
-              />
-            </Flex>
-            <Box>
-              <Button
-                size={"sm"}
-                colorScheme="blue"
-                onClick={() => {
-                  onOpen();
-                }}
-                isDisabled={!hasPermission("APPOINTMENT_ADD")}
-              >
-                Add New
-              </Button>
-            </Box>
-          </Flex>
-
-          {/* Status checkboxes */}
-          <Flex alignItems={"top"} justifyContent={"space-between"}>
-            {" "}
-            <CheckboxGroup
-              colorScheme="blue"
-              onChange={handleStatusChange}
-              value={statusFilters}
-            >
-              <Flex mb={5} gap={4} alignItems={"center"}>
-                <Checkbox value="Confirmed">Confirmed</Checkbox>
-                <Checkbox value="Visited">Visited</Checkbox>
-                <Checkbox value="Completed">Completed</Checkbox>
-                <Checkbox value="Pending">Pending</Checkbox>
-                <Checkbox value="Cancelled">Cancelled</Checkbox>
-                <Checkbox value="Rejected">Rejected</Checkbox>
-                <Checkbox value="Cancellation">Cancellation Initiated</Checkbox>
-              </Flex>
-            </CheckboxGroup>{" "}
-            <Button
-              isLoading={isFetching || isRefetching}
-              size={"sm"}
-              colorScheme="blue"
-              onClick={() => {
-                queryClient.invalidateQueries(
-                  ["appointments", page, debouncedSearchQuery, statusFilters],
-                  { refetchInactive: true }
-                );
-              }}
-              rightIcon={<RefreshCwIcon size={14} />}
-            >
-              Refresh Table
-            </Button>
-          </Flex>
-
-          <DynamicTable
-            minPad={"1px 10px"}
-            data={data?.data}
-            onActionClick={
-              <YourActionButton onClick={() => {}} navigate={navigate} />
-            }
-          />
-        </Box>
+        <Alert status="error">
+          <AlertIcon />
+          <AlertDescription>No data found</AlertDescription>
+        </Alert>
       )}
-
       <Flex justify={"center"} mt={4}>
         <Pagination
           currentPage={page}
@@ -275,29 +400,8 @@ export default function Appointments() {
           totalPages={totalPage}
         />
       </Flex>
-
       {/* Add New Appointment */}
       {isOpen && <AddNewAppointment isOpen={isOpen} onClose={onClose} />}
     </Box>
   );
 }
-
-const YourActionButton = ({ onClick, rowData, navigate }) => {
-  const { hasPermission } = useHasPermission();
-  return (
-    <Flex justify={"center"}>
-      {hasPermission("APPOINTMENT_UPDATE") && (
-        <IconButton
-          size={"sm"}
-          variant={"ghost"}
-          _hover={{ background: "none" }}
-          onClick={() => {
-            onClick(rowData);
-            navigate(`/appointment/${rowData.id}`);
-          }}
-          icon={<FiEdit fontSize={18} color={theme.colors.blue[500]} />}
-        />
-      )}
-    </Flex>
-  );
-};

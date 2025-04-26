@@ -18,11 +18,8 @@ import DateRangeCalender from "../../Components/DateRangeCalender";
 import { GET } from "../../Controllers/ApiControllers";
 import ErrorPage from "../../Components/ErrorPage";
 import { RefreshCwIcon } from "lucide-react";
-import { daysBack } from "../../Controllers/dateConfig";
 import admin from "../../Controllers/admin";
-
-const sevenDaysBack = moment().subtract(daysBack, "days").format("YYYY-MM-DD");
-const today = moment().format("YYYY-MM-DD");
+import { useSelectedClinic } from "../../Context/SelectedClinic";
 
 const ReviewsPage = () => {
   const toast = useToast();
@@ -33,25 +30,34 @@ const ReviewsPage = () => {
   const debouncedSearchQuery = useDebounce(searchQuery, 1000);
   const queryClient = useQueryClient();
   const [dateRange, setDateRange] = useState({
-    startDate: sevenDaysBack,
-    endDate: today,
+    startDate: null,
+    endDate: null,
   });
-
-  const { startDate, endDate } = dateRange;
-
   const getPageIndices = (currentPage, itemsPerPage) => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage - 1;
     return { startIndex, endIndex };
   };
-
   const { startIndex, endIndex } = getPageIndices(page, 50);
+  const { selectedClinic } = useSelectedClinic();
 
   const fetchReviews = async () => {
     const url =
       admin.role.name === "Doctor"
-        ? `get_doctor_review_page?start=${startIndex}&end=${endIndex}&start_date=${startDate}&end_date=${endDate}&search=${debouncedSearchQuery}&doctor_id=${admin.id}`
-        : `get_doctor_review_page?start=${startIndex}&end=${endIndex}&start_date=${startDate}&end_date=${endDate}&search=${debouncedSearchQuery}`;
+        ? `get_all_doctor_review?start=${startIndex}&end=${endIndex}&start_date=${
+            dateRange.startDate || ""
+          }&end_date=${
+            dateRange.endDate || ""
+          }&search=${debouncedSearchQuery}&doctor_id=${admin.id}&clinic_id=${
+            selectedClinic?.id || ""
+          }`
+        : `get_all_doctor_review?start=${startIndex}&end=${endIndex}&start_date=${
+            dateRange.startDate || ""
+          }&end_date=${
+            dateRange.endDate || ""
+          }&search=${debouncedSearchQuery}&clinic_id=${
+            selectedClinic?.id || ""
+          }`;
     const response = await GET(admin.token, url);
     return {
       data: response.data,
@@ -60,7 +66,13 @@ const ReviewsPage = () => {
   };
 
   const { data, error, isLoading, isFetching } = useQuery({
-    queryKey: ["reviews", page, debouncedSearchQuery, dateRange],
+    queryKey: [
+      "reviews",
+      page,
+      debouncedSearchQuery,
+      dateRange,
+      selectedClinic?.id,
+    ],
     queryFn: fetchReviews,
   });
 
@@ -130,7 +142,7 @@ const ReviewsPage = () => {
           </Flex>
 
           <DynamicTable
-          minPad={3}
+            minPad={3}
             data={data?.data?.map((review) => ({
               ID: review.id,
               "Doctor Name": `${review.doct_f_name} ${review.doct_l_name}`,

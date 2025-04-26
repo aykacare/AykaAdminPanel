@@ -1,110 +1,143 @@
-﻿import t from "axios";
-import a from "./token";
-import e from "./api";
-let handleSessionExpiration = (t) => {
-    if (
-      t.response &&
-      t.response.data &&
-      401 === t.response.data.response &&
-      !1 === t.response.data.status &&
-      "Session expired. Please log in again." === t.response.data.message
-    )
-      return (
-        console.error(t.response.data.message),
-        setTimeout(() => {
-          localStorage.removeItem("admin"), window.location.reload();
-        }, 2e3),
-        { sessionExpired: !0, message: "Session expired. Please log-in again." }
-      );
-    throw t;
-  },
-  GET = async (o, n) => {
-    var i = {
-      method: "get",
-      maxBodyLength: 1 / 0,
-      url: `${e}/${n}`,
-      headers: { Authorization: a(o) },
+﻿import axios from "axios";
+import GenerateToken from "./token";
+import api from "./api";
+
+const handleSessionExpiration = (error) => {
+  if (
+    error.response &&
+    error.response.data &&
+    error.response.data.response === 401 &&
+    error.response.data.status === false &&
+    error.response.data.message === "Session expired. Please log in again."
+  ) {
+    console.error(error.response.data.message);
+    setTimeout(() => {
+      localStorage.removeItem("admin");
+      window.location.reload();
+    }, 2000);
+    return {
+      sessionExpired: true,
+      message: "Session expired. Please log-in again.",
     };
-    try {
-      let s = await t(i);
-      return s.data;
-    } catch (d) {
-      console.log(d)
-    }
-  },
-  ADD = async (r, o, n) => {
-    var i = {
-      method: "post",
-      maxBodyLength: 1 / 0,
-      url: `${e}/${o}`,
-      headers: { Authorization: a(r), "Content-Type": "multipart/form-data" },
-      data: n,
-    };
-    try {
-      let s = await t(i);
-      return s.data;
-    } catch (d) {
-      return handleSessionExpiration(d);
-    }
-  },
-  ADDMulti = async (e, r, o) => {
-    var n = {
-      method: "post",
-      maxBodyLength: 1 / 0,
-      url: r,
-      headers: { Authorization: a(e), "Content-Type": "multipart/form-data" },
-      data: o,
-    };
-    try {
-      let i = await t(n);
-      return i.data;
-    } catch (s) {
-      return handleSessionExpiration(s);
-    }
-  },
-  UPDATE = async (r, o, n) => {
-    var i = {
-      method: "post",
-      maxBodyLength: 1 / 0,
-      url: `${e}/${o}`,
-      headers: { Authorization: a(r), "Content-Type": "multipart/form-data" },
-      data: n,
-    };
-    try {
-      let s = await t(i);
-      return s.data;
-    } catch (d) {
-      return handleSessionExpiration(d);
-    }
-  },
-  DELETE = async (r, o, n) => {
-    var i = {
-      method: "post",
-      maxBodyLength: 1 / 0,
-      url: `${e}/${o}`,
-      headers: { Authorization: a(r), "Content-Type": "application/json" },
-      data: n,
-    };
-    try {
-      let s = await t(i);
-      return s.data;
-    } catch (d) {
-      return handleSessionExpiration(d);
-    }
-  },
-  UPLOAD = async (e, r, o) => {
-    var n = {
-      method: "post",
-      maxBodyLength: 1 / 0,
-      url: r,
-      headers: { Authorization: a(e), "Content-Type": "multipart/form-data" },
-      data: o,
-    };
-    try {
-      let i = await t(n);
-      return i.data;
-    } catch (s) {
-      return handleSessionExpiration(s);
-    }
+  }
+  throw error;
+};
+
+const GET = async (token, endPoint) => {
+  var config = {
+    method: "get",
+    maxBodyLength: Infinity,
+    url: `${api}/${endPoint}`,
+    headers: {
+      Authorization: token ? GenerateToken(token) : "",
+    },
   };
+
+  try {
+    const response = await axios(config);
+    return response.data;
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
+const ADD = async (token, endPoint, data) => {
+  var config = {
+    method: "post",
+    maxBodyLength: Infinity,
+    url: `${api}/${endPoint}`,
+    headers: {
+      Authorization: GenerateToken(token),
+      "Content-Type": "multipart/form-data",
+    },
+    data: data,
+  };
+
+  try {
+    const response = await axios(config);
+    return response.data;
+  } catch (error) {
+    return handleSessionExpiration(error);
+  }
+};
+
+const ADDMulti = async (token, url, data) => {
+  var config = {
+    method: "post",
+    maxBodyLength: Infinity,
+    url: url,
+    headers: {
+      Authorization: GenerateToken(token),
+      "Content-Type": "multipart/form-data",
+    },
+    data: data,
+  };
+
+  try {
+    const response = await axios(config);
+    return response.data;
+  } catch (error) {
+    return handleSessionExpiration(error);
+  }
+};
+
+const UPDATE = async (token, endPoint, data) => {
+  var config = {
+    method: "post",
+    maxBodyLength: Infinity,
+    url: `${api}/${endPoint}`,
+    headers: {
+      Authorization: GenerateToken(token),
+      "Content-Type": "multipart/form-data",
+    },
+    data: data,
+  };
+
+  try {
+    const response = await axios(config);
+    return response.data;
+  } catch (error) {
+    return handleSessionExpiration(error);
+  }
+};
+
+const DELETE = async (token, endPoint, data) => {
+  var config = {
+    method: "post",
+    maxBodyLength: Infinity,
+    url: `${api}/${endPoint}`,
+    headers: {
+      Authorization: GenerateToken(token),
+      "Content-Type": "application/json",
+    },
+    data: data,
+  };
+  try {
+    const response = await axios(config);
+    return response.data;
+  } catch (error) {
+    return handleSessionExpiration(error);
+  }
+};
+
+const UPLOAD = async (token, url, data) => {
+  var config = {
+    method: "post",
+    maxBodyLength: Infinity,
+    url: url,
+    headers: {
+      Authorization: GenerateToken(token),
+      "Content-Type": "multipart/form-data",
+    },
+    data: data,
+  };
+
+  try {
+    const response = await axios(config);
+    return response.data;
+  } catch (error) {
+    return handleSessionExpiration(error);
+  }
+};
+
 export { GET, ADD, DELETE, UPDATE, UPLOAD, ADDMulti };

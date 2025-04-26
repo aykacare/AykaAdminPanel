@@ -14,7 +14,6 @@ import {
 } from "@chakra-ui/react";
 import { useState } from "react";
 import { FaTrash } from "react-icons/fa";
-import { FiEdit } from "react-icons/fi";
 import { useQuery } from "@tanstack/react-query";
 import DynamicTable from "../../Components/DataTable";
 import { GET } from "../../Controllers/ApiControllers";
@@ -25,12 +24,22 @@ import useHasPermission from "../../Hooks/HasPermission";
 import NotAuth from "../../Components/NotAuth";
 import AddCoupon from "./Add";
 import DeleteUsedCoupons from "./DeleteUsedCoupons";
+import { useSelectedClinic } from "../../Context/SelectedClinic";
+import Pagination from "../../Components/Pagination";
+
+const getPageIndices = (currentPage, itemsPerPage) => {
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  let endIndex = startIndex + itemsPerPage - 1;
+  return { startIndex, endIndex };
+};
 
 export default function UsedCoupons() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [SelectedData, setSelectedData] = useState();
   const { hasPermission } = useHasPermission();
-
+  const { selectedClinic } = useSelectedClinic();
+  const [page, setPage] = useState(1);
+  const { startIndex, endIndex } = getPageIndices(page, 50);
   const {
     isOpen: DeleteisOpen,
     onOpen: DeleteonOpen,
@@ -44,7 +53,12 @@ export default function UsedCoupons() {
   const toast = useToast();
   const id = "Errortoast";
   const getData = async () => {
-    const res = await GET(admin.token, "get_coupon_use");
+    const res = await GET(
+      admin.token,
+      `get_coupon_use?start=${startIndex}&end=${endIndex}&clinic_id=${
+        selectedClinic?.id || ""
+      }`
+    );
     const rearrangedArray = res?.data.map((item) => {
       const {
         id,
@@ -54,17 +68,22 @@ export default function UsedCoupons() {
         updated_at,
         f_name,
         l_name,
+        clinic_id,
       } = item;
       return {
         id,
         coupon_id,
         user_id,
+        clinic_id,
         user_name: `${f_name} ${l_name}`,
         appointment_id,
         updated_at,
       };
     });
-    return rearrangedArray;
+    return {
+      data: rearrangedArray,
+      total_record: res.total_record,
+    };
   };
 
   const handleActionClick = (rowData) => {
@@ -72,11 +91,16 @@ export default function UsedCoupons() {
   };
 
   const { isLoading, data, error } = useQuery({
-    queryKey: ["used-coupons"],
+    queryKey: ["used-coupons", selectedClinic?.id],
     queryFn: getData,
   });
 
-  const { handleSearchChange, filteredData } = useSearchFilter(data);
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+  };
+  const totalPage = Math.ceil(data?.total_record / 50);
+
+  const { handleSearchChange, filteredData } = useSearchFilter(data?.data);
 
   if (error) {
     if (!toast.isActive(id)) {
@@ -153,28 +177,22 @@ export default function UsedCoupons() {
           data={SelectedData}
         />
       )}
+
+      <Flex justify={"center"} mt={4}>
+        <Pagination
+          currentPage={page}
+          onPageChange={handlePageChange}
+          totalPages={totalPage}
+        />
+      </Flex>
     </Box>
   );
 }
 
-const YourActionButton = ({ onClick, rowData, DeleteonOpen, EditonOpen }) => {
+const YourActionButton = ({ onClick, rowData, DeleteonOpen }) => {
   const { hasPermission } = useHasPermission();
   return (
     <Flex justify={"center"}>
-      {hasPermission("COUPON_UPDATE") && (
-        <IconButton
-          size={"sm"}
-          variant={"ghost"}
-          _hover={{
-            background: "none",
-          }}
-          onClick={() => {
-            onClick(rowData);
-            EditonOpen();
-          }}
-          icon={<FiEdit fontSize={18} color={theme.colors.blue[500]} />}
-        />
-      )}
       {hasPermission("COUPON_DELETE") && (
         <IconButton
           size={"sm"}

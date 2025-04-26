@@ -24,8 +24,9 @@ import admin from "../../Controllers/admin";
 import useHasPermission from "../../Hooks/HasPermission";
 import UsersCombobox from "../../Components/UsersComboBox";
 import useUserData from "../../Hooks/Users";
+import useRolesData from "../../Hooks/UserRolesData";
 
-export default function AssignRole({ isOpen, onClose, Roles }) {
+export default function AssignRole({ isOpen, onClose }) {
   const [isLoading, setisLoading] = useState(false);
   const { hasPermission } = useHasPermission();
   const { register, handleSubmit, reset } = useForm();
@@ -33,6 +34,7 @@ export default function AssignRole({ isOpen, onClose, Roles }) {
   const toast = useToast();
   const { usersData } = useUserData();
   const [selectedUser, setselectedUser] = useState();
+  const { Roles } = useRolesData();
 
   const addRole = async (Inputdata) => {
     if (!selectedUser) {

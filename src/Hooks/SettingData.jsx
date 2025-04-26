@@ -3,7 +3,7 @@ import { GET } from "../Controllers/ApiControllers";
 import admin from "../Controllers/admin";
 
 const getData = async () => {
-  const res = await GET(admin.token, `get_configurations`);
+  const res = await GET(admin ? admin : "", `get_configurations`);
   return res.data;
 };
 

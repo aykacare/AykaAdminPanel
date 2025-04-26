@@ -11,35 +11,51 @@ import AdminNotification from "./AdminNotifcation";
 export default function Notification() {
   const [activeTab, setActiveTab] = useState(0);
   const { hasPermission } = useHasPermission();
+
   if (!hasPermission("NOTIFICATION_VIEW")) return <NotAuth />;
+
+  const role = admin.role.name.toLowerCase();
+  const isSuperAdmin = role === "super admin";
+  const isDoctor = role === "doctor";
+  const isClinic = role === "clinic";
+
+  // Determine which tabs to show based on role
+  const showUserTab = isSuperAdmin;
+  const showDoctorTab = isSuperAdmin || isDoctor || isClinic;
+  const showAdminTab = isSuperAdmin || isClinic;
+
+
   return (
     <Box>
       <Tabs index={activeTab} onChange={(index) => setActiveTab(index)}>
         <TabList>
-          <Tab>User Notification</Tab>
-          <Tab>Doctor Notification</Tab>
-          {admin.role.name === "Admin" || admin.role.name === "admin" ? (
-            <Tab>Admin Notification</Tab>
-          ) : null}
+          {showUserTab && <Tab>User Notification</Tab>}
+          {showDoctorTab && <Tab>Doctor Notification</Tab>}
+          {showAdminTab && <Tab>Admin Notification</Tab>}
         </TabList>
 
         <TabPanels>
-          <TabPanel px={0}>
-            <UserNotification currentTab={0} activeTab={activeTab} />
-          </TabPanel>
-          <TabPanel px={0}>
-            <DoctorNotification currentTab={1} activeTab={activeTab} />
-          </TabPanel>
-
-          {admin.role.name === "Admin" || admin.role.name === "admin" ? (
-            <TabPanel>
-              <AdminNotification currentTab={2} activeTab={activeTab} />
+          {showUserTab && (
+            <TabPanel px={0}>
+              <UserNotification currentTab={0} activeTab={activeTab} />
             </TabPanel>
-          ) : null}
-
-          <TabPanel>
-            {/* <PaymentGetways currentTab={3} activeTab={activeTab} /> */}
-          </TabPanel>
+          )}
+          {showDoctorTab && (
+            <TabPanel px={0}>
+              <DoctorNotification
+                currentTab={showUserTab ? 1 : 0}
+                activeTab={activeTab}
+              />
+            </TabPanel>
+          )}
+          {showAdminTab && (
+            <TabPanel px={0}>
+              <AdminNotification
+                currentTab={showUserTab ? 2 : showDoctorTab ? 1 : 0}
+                activeTab={activeTab}
+              />
+            </TabPanel>
+          )}
         </TabPanels>
       </Tabs>
     </Box>

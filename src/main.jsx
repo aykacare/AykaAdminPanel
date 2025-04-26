@@ -7,12 +7,13 @@ import { theme } from "../theme";
 import App from "./App";
 import "./index.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ClinicProvider } from "./Context/SelectedClinic";
 
 const publicUrl = import.meta.env.BASE_URL;
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker
-    .register(`${publicUrl}firebase-messaging-sw.js`)
+    .register(`${publicUrl}/firebase-messaging-sw.js`)
     .then((registration) => {
       console.log("Service Worker registered:", registration);
     })
@@ -36,8 +37,9 @@ ReactDOM.createRoot(rootElement).render(
     <QueryClientProvider client={queryClient}>
       <BrowserRouter basename="/">
         <ChakraProvider theme={theme}>
-          {" "}
-          <App />
+          <ClinicProvider>
+            <App />
+          </ClinicProvider>
         </ChakraProvider>
       </BrowserRouter>
     </QueryClientProvider>

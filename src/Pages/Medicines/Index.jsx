@@ -10,24 +10,37 @@ import {
   useDisclosure,
   useToast,
 } from "@chakra-ui/react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FaTrash } from "react-icons/fa";
 import { FiEdit } from "react-icons/fi";
 import { useQuery } from "@tanstack/react-query";
 import DynamicTable from "../../Components/DataTable";
 import { GET } from "../../Controllers/ApiControllers";
 import admin from "../../Controllers/admin";
-import useSearchFilter from "../../Hooks/UseSearchFilter";
 import AddMedicine from "./AddMedicine";
 import UpdateMedicine from "./UpdateMedicine";
 import useHasPermission from "../../Hooks/HasPermission";
 import NotAuth from "../../Components/NotAuth";
 import DeleteMedicine from "./DeleteMedicine";
+import Pagination from "../../Components/Pagination";
+import useDebounce from "../../Hooks/UseDebounce";
+import { useSelectedClinic } from "../../Context/SelectedClinic";
+
+const getPageIndices = (currentPage, itemsPerPage) => {
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage - 1;
+  return { startIndex, endIndex };
+};
 
 export default function Medicines() {
   const { hasPermission } = useHasPermission();
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [SelectedData, setSelectedData] = useState();
+  const [selectedData, setSelectedData] = useState();
+  const [page, setPage] = useState(1);
+  const boxRef = useRef(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearchQuery = useDebounce(searchQuery, 1000);
+  const { selectedClinic } = useSelectedClinic();
 
   const {
     isOpen: DeleteisOpen,
@@ -41,28 +54,49 @@ export default function Medicines() {
   } = useDisclosure();
   const toast = useToast();
   const id = "Errortoast";
+
   const getData = async () => {
-    const res = await GET(admin.token, "get_prescribe_medicines");
-    return res.data;
+    const { startIndex, endIndex } = getPageIndices(page, 50);
+    const url = `get_prescribe_medicines?start=${startIndex}&end=${endIndex}&search=${debouncedSearchQuery}&clinic_id=${
+      selectedClinic?.id || ""
+    }`;
+    const res = await GET(admin.token, url);
+    return {
+      data: res.data,
+      total_record: res.total_record,
+    };
   };
+
+  const { isLoading, data, error } = useQuery({
+    queryKey: ["medicines", page, debouncedSearchQuery, selectedClinic],
+    queryFn: getData,
+  });
 
   const handleActionClick = (rowData) => {
     setSelectedData(rowData);
   };
 
-  const { isLoading, data, error } = useQuery({
-    queryKey: ["medicines"],
-    queryFn: getData,
-  });
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+  };
 
-  const { handleSearchChange, filteredData } = useSearchFilter(data);
+  const totalPage = Math.ceil(data?.total_record / 50);
+
+  useEffect(() => {
+    if (boxRef.current) {
+      boxRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+  }, [page]);
 
   if (error) {
     if (!toast.isActive(id)) {
       toast({
         id,
-        title: "oops!.",
-        description: "Something bad happens.",
+        title: "Oops!",
+        description: "Something went wrong.",
         status: "error",
         duration: 2000,
         isClosable: true,
@@ -72,8 +106,9 @@ export default function Medicines() {
   }
 
   if (!hasPermission("MEDICINE_VIEW")) return <NotAuth />;
+
   return (
-    <Box>
+    <Box ref={boxRef}>
       {isLoading || !data ? (
         <Box>
           <Flex mb={5} justify={"space-between"}>
@@ -85,13 +120,16 @@ export default function Medicines() {
       ) : (
         <Box>
           <Flex mb={5} justify={"space-between"} align={"center"}>
-            <Input
-              size={"md"}
-              placeholder="Search"
-              w={400}
-              maxW={"50vw"}
-              onChange={(e) => handleSearchChange(e.target.value)}
-            />
+            <Flex align={"center"} gap={4}>
+              <Input
+                size={"md"}
+                placeholder="Search"
+                w={400}
+                maxW={"50vw"}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                value={searchQuery}
+              />
+            </Flex>
             <Box>
               <Button
                 size={"sm"}
@@ -104,7 +142,7 @@ export default function Medicines() {
             </Box>
           </Flex>
           <DynamicTable
-            data={filteredData}
+            data={data?.data}
             onActionClick={
               <YourActionButton
                 onClick={handleActionClick}
@@ -115,20 +153,27 @@ export default function Medicines() {
           />
         </Box>
       )}
+      <Flex justify={"center"} mt={4}>
+        <Pagination
+          currentPage={page}
+          onPageChange={handlePageChange}
+          totalPages={totalPage}
+        />
+      </Flex>
 
       <AddMedicine isOpen={isOpen} onClose={onClose} />
       {EditisOpen && (
         <UpdateMedicine
           isOpen={EditisOpen}
           onClose={EditonClose}
-          data={SelectedData}
+          data={selectedData}
         />
       )}
       {DeleteisOpen && (
         <DeleteMedicine
           isOpen={DeleteisOpen}
           onClose={DeleteonClose}
-          data={SelectedData}
+          data={selectedData}
         />
       )}
     </Box>

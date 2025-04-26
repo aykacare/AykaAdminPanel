@@ -26,6 +26,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ADD } from "../../Controllers/ApiControllers";
 import ShowToast from "../../Controllers/ShowToast";
 import admin from "../../Controllers/admin";
+import { useSelectedClinic } from "../../Context/SelectedClinic";
+import UseClinicsData from "../../Hooks/UseClinicsData";
+import { ClinicComboBox } from "../../Components/ClinicComboBox";
 
 export default function AddPatientFiles({ isOpen, onClose, id }) {
   const [isLoading, setisLoading] = useState();
@@ -35,6 +38,9 @@ export default function AddPatientFiles({ isOpen, onClose, id }) {
   const queryClient = useQueryClient();
   const toast = useToast();
   const MAX_FILE_SIZE = 5 * 1024 * 1024;
+  const { selectedClinic } = useSelectedClinic();
+  const { clinicsData } = UseClinicsData();
+  const [selectedClinicID, setselectedClinicID] = useState();
 
   const handleDrop = (event) => {
     event.preventDefault();
@@ -60,10 +66,15 @@ export default function AddPatientFiles({ isOpen, onClose, id }) {
   };
 
   const AddNewFile = async (data) => {
+    if (!selectedClinicID) {
+      return ShowToast(toast, "error", "Please Select Clinic");
+    }
+
     let formData = {
       ...data,
       patient_id: id,
       file: selectedFile,
+      clinic_id: selectedClinicID.id,
     };
     try {
       setisLoading(true);
@@ -99,6 +110,15 @@ export default function AddPatientFiles({ isOpen, onClose, id }) {
               <Input
                 placeholder="Name"
                 {...register("file_name", { required: true })}
+              />
+            </FormControl>
+            <FormControl isRequired mt={5}>
+              <FormLabel>Clinic</FormLabel>
+              <ClinicComboBox
+                data={clinicsData}
+                name={"clinic"}
+                defaultData={selectedClinic}
+                setState={setselectedClinicID}
               />
             </FormControl>
 

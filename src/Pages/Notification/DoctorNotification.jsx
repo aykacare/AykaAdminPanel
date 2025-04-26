@@ -5,7 +5,8 @@ import {
   Flex,
   Input,
   Skeleton,
-  Tooltip, useToast
+  Tooltip,
+  useToast,
 } from "@chakra-ui/react";
 import { useQuery } from "@tanstack/react-query";
 import { GET } from "../../Controllers/ApiControllers";
@@ -19,16 +20,13 @@ import DateRangeCalender from "../../Components/DateRangeCalender";
 import useDebounce from "../../Hooks/UseDebounce";
 import moment from "moment";
 import { useState } from "react";
-import { daysBack } from "../../Controllers/dateConfig";
+import { useSelectedClinic } from "../../Context/SelectedClinic";
 
 const getPageIndices = (currentPage, itemsPerPage) => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   let endIndex = startIndex + itemsPerPage - 1;
   return { startIndex, endIndex };
 };
-
-const sevenDaysBack = moment().subtract(daysBack, "days").format("YYYY-MM-DD");
-const today = moment().format("YYYY-MM-DD");
 
 export default function DoctorNotification({ currentTab, activeTab }) {
   const navigate = useNavigate();
@@ -38,13 +36,17 @@ export default function DoctorNotification({ currentTab, activeTab }) {
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearchQuery = useDebounce(searchQuery, 1000);
   const { startIndex, endIndex } = getPageIndices(page, 50);
+  const { selectedClinic } = useSelectedClinic();
   const [dateRange, setDateRange] = useState({
-    startDate: sevenDaysBack,
-    endDate: today,
+    startDate: null,
+    endDate: null,
   });
-
-  const start_date = moment(dateRange.startDate).format("YYYY-MM-DD");
-  const end_date = moment(dateRange.endDate).format("YYYY-MM-DD");
+  const start_date = dateRange.startDate
+    ? moment(dateRange.startDate).format("YYYY-MM-DD")
+    : "";
+  const end_date = dateRange.endDate
+    ? moment(dateRange.endDate).format("YYYY-MM-DD")
+    : "";
 
   const getData = async () => {
     const url =
@@ -53,7 +55,9 @@ export default function DoctorNotification({ currentTab, activeTab }) {
         : `get_doctor_notification_page`;
     const res = await GET(
       admin.token,
-      `${url}?start=${startIndex}&end=${endIndex}&search=${debouncedSearchQuery}&start_date=${start_date}&end_date=${end_date}`
+      `${url}?start=${startIndex}&end=${endIndex}&search=${debouncedSearchQuery}&start_date=${start_date}&end_date=${end_date}&clinic_id=${
+        selectedClinic?.id || ""
+      }`
     );
 
     const newData = res.data.map((item) => {
@@ -142,6 +146,7 @@ export default function DoctorNotification({ currentTab, activeTab }) {
       page,
       start_date,
       end_date,
+      selectedClinic
     ],
     queryFn: getData,
     enabled: currentTab === activeTab,

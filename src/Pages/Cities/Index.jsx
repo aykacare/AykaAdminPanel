@@ -3,9 +3,11 @@ import {
   Box,
   Button,
   Flex,
+  FormControl,
   IconButton,
   Input,
   Skeleton,
+  Switch,
   theme,
   useDisclosure,
   useToast,
@@ -13,16 +15,18 @@ import {
 import { useState } from "react";
 import { FaTrash } from "react-icons/fa";
 import { FiEdit } from "react-icons/fi";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import DynamicTable from "../../Components/DataTable";
-import { GET } from "../../Controllers/ApiControllers";
+import { GET, UPDATE } from "../../Controllers/ApiControllers";
 import admin from "../../Controllers/admin";
+import useSearchFilter from "../../Hooks/UseSearchFilter";
+import useHasPermission from "../../Hooks/HasPermission";
+import ShowToast from "../../Controllers/ShowToast";
 import AddCityModel from "./Add";
 import UpdateCityModel from "./Update";
 import DeleteCity from "./Delete";
-import useSearchFilter from "../../Hooks/UseSearchFilter";
 
-export default function Cities() {
+export default function Cities({ activeTab, tabId }) {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [SelectedData, setSelectedData] = useState();
   const {
@@ -40,7 +44,34 @@ export default function Cities() {
 
   const getData = async () => {
     const res = await GET(admin.token, "get_city");
-    return res.data;
+    let data = res.data;
+    const FormatedData = data?.map((item) => {
+      const {
+        id,
+        title,
+        active,
+        updated_at,
+        state_title,
+        state_id,
+        created_at,
+        latitude,
+        longitude,
+        default_city,
+      } = item;
+      return {
+        id,
+        title,
+        state_title,
+        state_id,
+        active: <IsActive id={id} isActive={active} />,
+        latitude,
+        longitude,
+        default_city: default_city === 1 ? "Yes" : "No",
+        updated_at,
+        created_at,
+      };
+    });
+    return FormatedData;
   };
 
   const handleActionClick = (rowData) => {
@@ -50,17 +81,17 @@ export default function Cities() {
   const { isLoading, data, error } = useQuery({
     queryKey: ["cities"],
     queryFn: getData,
+    enabled: activeTab === tabId,
   });
 
   const { handleSearchChange, filteredData } = useSearchFilter(data);
 
   if (error) {
-    
     if (!toast.isActive(id)) {
       toast({
         id,
-        title: "oops!.",
-        description: "Something bad happens.",
+        title: "Oops!",
+        description: "Something went wrong.",
         status: "error",
         duration: 2000,
         isClosable: true,
@@ -153,5 +184,46 @@ const YourActionButton = ({ onClick, rowData, DeleteonOpen, EditonOpen }) => {
         icon={<FaTrash fontSize={18} color={theme.colors.red[500]} />}
       />
     </Flex>
+  );
+};
+
+export const IsActive = ({ id, isActive }) => {
+  const { hasPermission } = useHasPermission();
+  const toast = useToast();
+  const queryClient = useQueryClient();
+
+  const handleActive = async (id, active) => {
+    let data = { id, active };
+    try {
+      const res = await UPDATE(admin.token, "update_city", data);
+      if (res.response === 200) {
+        ShowToast(toast, "success", "City Updated!");
+        queryClient.invalidateQueries("cities");
+      } else {
+        ShowToast(toast, "error", res.message);
+      }
+    } catch (error) {
+      ShowToast(toast, "error", JSON.stringify(error));
+    }
+  };
+
+  const mutation = useMutation({
+    mutationFn: async (data) => {
+      await handleActive(data.id, data.active);
+    },
+  });
+
+  return (
+    <FormControl display="flex" alignItems="center">
+      <Switch
+        isDisabled={!hasPermission("CITY_UPDATE")}
+        defaultChecked={isActive === 1}
+        size={"sm"}
+        onChange={(e) => {
+          let active = e.target.checked ? 1 : 0;
+          mutation.mutate({ id, active });
+        }}
+      />
+    </FormControl>
   );
 };

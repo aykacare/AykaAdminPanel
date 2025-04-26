@@ -27,18 +27,14 @@ export default function UsersCombobox({
   const [value, setValue] = useState("");
   const { colorMode } = useColorMode();
   const [selected, setselected] = useState();
-
+  console.log(defaultData);
   useEffect(() => {
     if (defaultData) {
       const selectedItem = items?.find((item) => {
         if (typeof defaultData === "string") {
           return item.id === Number(defaultData);
         } else if (typeof defaultData === "object" && defaultData !== null) {
-          return (
-            item.f_name === defaultData.f_name &&
-            item.l_name === defaultData.l_name &&
-            item.phone === defaultData.phone
-          );
+          return item.id === Number(defaultData.id);
         }
         return false;
       });
@@ -54,6 +50,8 @@ export default function UsersCombobox({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+        isDisabled={defaultData}
+        _disabled={{ bg: "transparent", color: "inherit" }}
           fontWeight={"500"}
           justifyContent={"space-between"}
           variant="outline"

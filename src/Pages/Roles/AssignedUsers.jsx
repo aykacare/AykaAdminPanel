@@ -8,31 +8,21 @@ import {
   Skeleton,
   theme,
   useDisclosure,
-  useToast,
-  AlertDialog,
-  AlertDialogBody,
-  AlertDialogContent,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogOverlay,
+  useToast
 } from "@chakra-ui/react";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { FaTrash } from "react-icons/fa";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import DynamicTable from "../../Components/DataTable";
-import { DELETE, GET } from "../../Controllers/ApiControllers";
+import { GET } from "../../Controllers/ApiControllers";
 import admin from "../../Controllers/admin";
 import AddRoleModel from "./Add";
-import DeleteRole from "./Delete";
 import useSearchFilter from "../../Hooks/UseSearchFilter";
 import useHasPermission from "../../Hooks/HasPermission";
 import NotAuth from "../../Components/NotAuth";
 import AssignRole from "./AssignRole";
-import ShowToast from "../../Controllers/ShowToast";
-const getRoles = async () => {
-  const res = await GET(admin.token, "get_roles");
-  return res.data;
-};
+import useRolesData from "../../Hooks/UserRolesData";
+import DeleteAssignRole from "./DeleteAssignRole";
 const getData = async () => {
   const res = await GET(admin.token, "get_assign_roles");
   const rearrangedArray = res?.data.map((item) => {
@@ -71,12 +61,15 @@ const getData = async () => {
         created_at,
     };
   });
-  return rearrangedArray;
+  return rearrangedArray.sort((a, b) => {
+    return b.id - a.id;
+  });
 };
 
 export default function AssignedUsers() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [SelectedData, setSelectedData] = useState();
+  const { Roles } = useRolesData();
   const {
     isOpen: DeleteisOpen,
     onOpen: DeleteonOpen,
@@ -99,10 +92,7 @@ export default function AssignedUsers() {
     queryKey: ["assigned-roles"],
     queryFn: getData,
   });
-  const { data: roles } = useQuery({
-    queryKey: ["roles"],
-    queryFn: getRoles,
-  });
+
   const { handleSearchChange, filteredData } = useSearchFilter(data);
 
   if (error) {
@@ -177,7 +167,7 @@ export default function AssignedUsers() {
         <AssignRole
           isOpen={AssignisOpen}
           onClose={AssignonClose}
-          Roles={roles}
+          Roles={Roles}
         />
       )}
     </Box>
@@ -206,71 +196,4 @@ const YourActionButton = ({ onClick, rowData, DeleteonOpen }) => {
   );
 };
 
-function DeleteAssignRole({ isOpen, onClose, data }) {
-  const toast = useToast();
-  const cancelRef = useRef();
-  const queryClient = useQueryClient();
-  const [isLoading, setisLoading] = useState();
 
-  const DeleteRole = async () => {
-    let formData = {
-      id: data.id,
-    };
-    try {
-      setisLoading(true);
-      const res = await DELETE(admin.token, "de_assign_role", formData);
-      setisLoading(false);
-      if (res.response === 200) {
-        ShowToast(toast, "success", "Deleted!");
-        queryClient.invalidateQueries("roles");
-        onClose();
-      } else {
-        ShowToast(toast, "error", res.message);
-      }
-    } catch (error) {
-      setisLoading(false);
-      ShowToast(toast, "error", JSON.stringify(error));
-    }
-  };
-
-  return (
-    <AlertDialog
-      isOpen={isOpen}
-      onClose={onClose}
-      leastDestructiveRef={cancelRef}
-      isCentered
-    >
-      <AlertDialogOverlay>
-        <AlertDialogContent>
-          <AlertDialogHeader fontSize="lg" fontWeight="semi-bold">
-            Delete Assign Role ( <b>{data.role_name}</b> ) form ({data.name})
-          </AlertDialogHeader>
-
-          <AlertDialogBody>
-            Are you sure? You can not undo this action afterwards.
-          </AlertDialogBody>
-
-          <AlertDialogFooter>
-            <Button
-              ref={cancelRef}
-              onClick={onClose}
-              colorScheme="gray"
-              size={"sm"}
-            >
-              Cancel
-            </Button>
-            <Button
-              colorScheme="red"
-              onClick={DeleteRole}
-              ml={3}
-              size={"sm"}
-              isLoading={isLoading}
-            >
-              Delete
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialogOverlay>
-    </AlertDialog>
-  );
-}

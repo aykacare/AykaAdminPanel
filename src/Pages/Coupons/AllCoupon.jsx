@@ -14,7 +14,7 @@ import {
   useDisclosure,
   useToast,
 } from "@chakra-ui/react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FaTrash } from "react-icons/fa";
 import { FiEdit } from "react-icons/fi";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -22,18 +22,27 @@ import DynamicTable from "../../Components/DataTable";
 import { GET, UPDATE } from "../../Controllers/ApiControllers";
 import admin from "../../Controllers/admin";
 import UpdateDepartmentModel from "./Update";
-import useSearchFilter from "../../Hooks/UseSearchFilter";
 import useHasPermission from "../../Hooks/HasPermission";
 import NotAuth from "../../Components/NotAuth";
 import ShowToast from "../../Controllers/ShowToast";
 import DeleteCoupons from "./Delete";
 import AddCoupon from "./Add";
+import { useSelectedClinic } from "../../Context/SelectedClinic";
+import useDebounce from "../../Hooks/UseDebounce";
+import Pagination from "../../Components/Pagination";
+
+const getPageIndices = (currentPage, itemsPerPage) => {
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  let endIndex = startIndex + itemsPerPage - 1;
+  return { startIndex, endIndex };
+};
 
 export default function AllCoupons() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [SelectedData, setSelectedData] = useState();
   const { hasPermission } = useHasPermission();
-
+  const toast = useToast();
+  const id = "Errortoast";
   const {
     isOpen: DeleteisOpen,
     onOpen: DeleteonOpen,
@@ -44,14 +53,26 @@ export default function AllCoupons() {
     onOpen: EditonOpen,
     onClose: EditonClose,
   } = useDisclosure();
-  const toast = useToast();
-  const id = "Errortoast";
+
+  const [page, setPage] = useState(1);
+  const boxRef = useRef(null);
+  const [searchQuery, setsearchQuery] = useState("");
+  const debouncedSearchQuery = useDebounce(searchQuery, 1000);
+  const { startIndex, endIndex } = getPageIndices(page, 50);
+  const { selectedClinic } = useSelectedClinic();
+
   const getData = async () => {
-    const res = await GET(admin.token, "get_coupon");
+    const res = await GET(
+      admin.token,
+      `get_coupon?start=${startIndex}&end=${endIndex}&search=${debouncedSearchQuery}&clinic_id=${
+        selectedClinic?.id || ""
+      }`
+    );
     const rearrangedArray = res?.data.map((doctor) => {
       const {
         id,
         active,
+        clinic_id,
         title,
         value,
         description,
@@ -62,6 +83,7 @@ export default function AllCoupons() {
       return {
         active: <IsActive id={id} isActive={active} />,
         id,
+        clinic_id,
         title,
         value,
         description,
@@ -70,7 +92,10 @@ export default function AllCoupons() {
         updated_at,
       };
     });
-    return rearrangedArray;
+    return {
+      data: rearrangedArray,
+      total_record: res.total_record,
+    };
   };
 
   const handleActionClick = (rowData) => {
@@ -78,12 +103,13 @@ export default function AllCoupons() {
   };
 
   const { isLoading, data, error } = useQuery({
-    queryKey: ["coupons"],
+    queryKey: ["coupons", page, debouncedSearchQuery, selectedClinic?.id],
     queryFn: getData,
   });
-
-  const { handleSearchChange, filteredData } = useSearchFilter(data);
-
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+  };
+  const totalPage = Math.ceil(data?.total_record / 50);
   if (error) {
     if (!toast.isActive(id)) {
       toast({
@@ -97,6 +123,15 @@ export default function AllCoupons() {
       });
     }
   }
+
+  useEffect(() => {
+    if (boxRef.current) {
+      boxRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+  }, [page]);
 
   if (!hasPermission("COUPON_VIEW")) return <NotAuth />;
 
@@ -122,7 +157,7 @@ export default function AllCoupons() {
               placeholder="Search"
               w={400}
               maxW={"50vw"}
-              onChange={(e) => handleSearchChange(e.target.value)}
+              onChange={(e) => setsearchQuery(e.target.value)}
             />
             {hasPermission("COUPON_ADD") && (
               <Box>
@@ -134,7 +169,7 @@ export default function AllCoupons() {
           </Flex>
           <DynamicTable
             minPad={"8px 8px"}
-            data={filteredData}
+            data={data?.data}
             onActionClick={
               <YourActionButton
                 onClick={handleActionClick}
@@ -159,6 +194,14 @@ export default function AllCoupons() {
           data={SelectedData}
         />
       )}
+
+      <Flex justify={"center"} mt={4}>
+        <Pagination
+          currentPage={page}
+          onPageChange={handlePageChange}
+          totalPages={totalPage}
+        />
+      </Flex>
     </Box>
   );
 }

@@ -3,6 +3,7 @@ import {
   Box,
   Button,
   Divider,
+  Flex,
   FormControl,
   FormLabel,
   Input,
@@ -21,7 +22,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { UPDATE } from "../../Controllers/ApiControllers";
 import ShowToast from "../../Controllers/ShowToast";
 import admin from "../../Controllers/admin";
-import todayDate from "../../Controllers/today";
 
 export default function UpdateCheckin({ isOpen, onClose, data }) {
   const [isLoading, setisLoading] = useState();
@@ -35,10 +35,14 @@ export default function UpdateCheckin({ isOpen, onClose, data }) {
       ...Inputdata,
       id: data.id,
     };
-    
+
     try {
       setisLoading(true);
-      const res = await UPDATE(admin.token, "update_appointment_checkin", formData);
+      const res = await UPDATE(
+        admin.token,
+        "update_appointment_checkin",
+        formData
+      );
       setisLoading(false);
       if (res.response === 200) {
         ShowToast(toast, "success", "Updated!");
@@ -56,73 +60,75 @@ export default function UpdateCheckin({ isOpen, onClose, data }) {
 
   return (
     <Modal
-    isOpen={isOpen}
-    onClose={onClose}
-    isCentered
-    size={"lg"}
-    scrollBehavior="inside"
-  >
-    <ModalOverlay />
-    <ModalContent as={"form"} onSubmit={handleSubmit(handleUpdate)}>
-      <ModalHeader fontSize={18} py={2}>
-        Update Checkin
-      </ModalHeader>
-      <ModalCloseButton />
-      <Divider />
-      <ModalBody>
-        {" "}
-        <Box pb={3}>
-          <FormControl isRequired>
-            <FormLabel>Appointment ID</FormLabel>
-            <Input
-              size={"sm"}
-              defaultValue={data?.appointment_id}
-              placeholder="Appointment ID"
-              {...register("appointment_id", { required: true })}
-            />
-          </FormControl>
-          <FormControl isRequired mt={3}>
-            <FormLabel>Date</FormLabel>
-            <Input
-             max={todayDate()}
-              defaultValue={data?.date}
-              size={"sm"}
-              type="date"
-              step={60}
-              placeholder="Date"
-              {...register("date", { required: true })}
-              isDisabled
-            />
-          </FormControl>
-          <FormControl isRequired mt={3}>
-            <FormLabel>End Date</FormLabel>
-            <Input
-              defaultValue={data?.time}
-              size={"sm"}
-              type="time"
-              step={60}
-              placeholder="time"
-              {...register("time", { required: true })}
-            />
-          </FormControl>
-        </Box>
-      </ModalBody>
-      <Divider />
-      <ModalFooter py={3}>
-        <Button colorScheme="gray" mr={3} onClick={onClose} size={"sm"}>
-          Close
-        </Button>
-        <Button
-          variant="solid"
-          size={"sm"}
-          colorScheme="blue"
-          type="submit"
-          isLoading={isLoading}
-        >
+      isOpen={isOpen}
+      onClose={onClose}
+      isCentered
+      size={"lg"}
+      scrollBehavior="inside"
+    >
+      <ModalOverlay />
+      <ModalContent as={"form"} onSubmit={handleSubmit(handleUpdate)}>
+        <ModalHeader fontSize={18} py={2}>
           Update Checkin
-        </Button>
-      </ModalFooter>
-    </ModalContent>
-  </Modal>
+        </ModalHeader>
+        <ModalCloseButton />
+        <Divider />
+        <ModalBody>
+          {" "}
+          <Box pb={3}>
+            <Flex align={"center"} gap={5}>
+              {" "}
+              <FormControl isRequired>
+                <FormLabel>Checkin ID</FormLabel>
+                <Input
+                  size={"sm"}
+                  defaultValue={data?.id}
+                  placeholder="Appointment ID"
+                  {...register("appointment_id", { required: true })}
+                  isReadOnly
+                />
+              </FormControl>
+              <FormControl isRequired>
+                <FormLabel>Appointment ID</FormLabel>
+                <Input
+                  size={"sm"}
+                  defaultValue={data?.id}
+                  placeholder="Appointment ID"
+                  {...register("appointment_id", { required: true })}
+                  isReadOnly
+                />
+              </FormControl>
+            </Flex>
+
+            <FormControl isRequired mt={3}>
+              <FormLabel>Time</FormLabel>
+              <Input
+                defaultValue={data?.time}
+                size={"sm"}
+                type="time"
+                step={60}
+                placeholder="time"
+                {...register("time", { required: true })}
+              />
+            </FormControl>
+          </Box>
+        </ModalBody>
+        <Divider />
+        <ModalFooter py={3}>
+          <Button colorScheme="gray" mr={3} onClick={onClose} size={"sm"}>
+            Close
+          </Button>
+          <Button
+            variant="solid"
+            size={"sm"}
+            colorScheme="blue"
+            type="submit"
+            isLoading={isLoading}
+          >
+            Update Checkin
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
   );
 }

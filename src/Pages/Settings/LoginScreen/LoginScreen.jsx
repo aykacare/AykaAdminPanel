@@ -1,5 +1,4 @@
-﻿import { FiEdit } from "react-icons/fi";
-/* eslint-disable react-hooks/rules-of-hooks */
+﻿/* eslint-disable react-hooks/rules-of-hooks */
 /* eslint-disable react/prop-types */
 import {
   Box,
@@ -117,26 +116,10 @@ export default function Files() {
   );
 }
 
-const YourActionButton = ({ onClick, rowData, DeleteonOpen, EditonOpen }) => {
+const YourActionButton = ({ onClick, rowData, DeleteonOpen }) => {
   const { hasPermission } = useHasPermission();
   return (
     <Flex justify={"center"}>
-      {hasPermission("LOGINSCREEN_UPDATE") && (
-        <IconButton
-          size={"sm"}
-          variant={"ghost"}
-          _hover={{
-            background: "none",
-          }}
-          onClick={() => {
-            onClick(rowData);
-            EditonOpen();
-          }}
-          icon={<FiEdit fontSize={18} color={theme.colors.blue[500]} />}
-          isDisabled
-        />
-      )}
-
       <IconButton
         isDisabled={!hasPermission("LOGINSCREEN_DELETE")}
         size={"sm"}

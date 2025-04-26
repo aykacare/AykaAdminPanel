@@ -12,7 +12,7 @@ import {
   useDisclosure,
   useToast,
 } from "@chakra-ui/react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FaTrash } from "react-icons/fa";
 import { FiEdit } from "react-icons/fi";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -25,26 +25,47 @@ import useHasPermission from "../../Hooks/HasPermission";
 import ShowToast from "../../Controllers/ShowToast";
 import NotAuth from "../../Components/NotAuth";
 import t from "../../Controllers/configs";
+import useDebounce from "../../Hooks/UseDebounce";
+import Pagination from "../../Components/Pagination";
+import { useSelectedClinic } from "../../Context/SelectedClinic";
+
+const ITEMS_PER_PAGE = 50;
+
+const getPageIndices = (currentPage, itemsPerPage) => {
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage - 1;
+  return { startIndex, endIndex };
+};
 
 export default function Doctors() {
   const { hasPermission } = useHasPermission();
   const [SelectedData, setSelectedData] = useState();
-  const [searchTerm, setsearchTerm] = useState();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const debouncedSearchQuery = useDebounce(searchQuery, 1000);
+  const { startIndex, endIndex } = getPageIndices(page, ITEMS_PER_PAGE);
+  const boxRef = useRef(null);
   const {
     isOpen: DeleteisOpen,
-    // onOpen: DeleteonOpen,
+    onOpen: DeleteonOpen,
     onClose: DeleteonClose,
   } = useDisclosure();
   const navigate = useNavigate();
+  const { selectedClinic } = useSelectedClinic();
 
   const toast = useToast();
   const id = "Errortoast";
   const getData = async () => {
     await t();
-    const res = await GET(admin.token, "get_doctor");
+    const res = await GET(
+      admin.token,
+      `get_doctor?start=${startIndex}&end=${endIndex}&search=${debouncedSearchQuery}&clinic_id=${
+        selectedClinic?.id || ""
+      }`
+    );
+   
     const rearrangedArray = res?.data.map((doctor) => {
       const {
-        id,
         user_id,
         image,
         f_name,
@@ -53,35 +74,54 @@ export default function Doctors() {
         email,
         specialization,
         department_name,
+        clinic_title,
         active,
         stop_booking,
+        clinic_id,
+        city_title,
+        state_title,
       } = doctor;
       return {
-        id,
-        UserID: user_id,
-        image,
-        Name: `${f_name} ${l_name}`,
-        phone,
-        email,
-        specialization,
-        dept: department_name,
+        id: user_id,
         active: <IsActive id={user_id} isActive={active} />,
         "Stop Booking": (
           <StopBooking id={user_id} isStop_booking={stop_booking} />
         ),
+
+        image,
+        name: `${f_name} ${l_name}`,
+        clinic: `${clinic_title} -#${clinic_id}`,
+        phone,
+        email,
+        specialization,
+        dept: department_name,
+        city: city_title,
+        state: state_title,
       };
     });
-    return rearrangedArray;
+    return {
+      data: rearrangedArray,
+      total_record: res.total_record,
+    };
   };
-
+  const { isLoading, data, error } = useQuery({
+    queryKey: ["doctors-main", selectedClinic?.id, debouncedSearchQuery],
+    queryFn: getData,
+  });
   const handleActionClick = (rowData) => {
     setSelectedData(rowData);
   };
 
-  const { isLoading, data, error } = useQuery({
-    queryKey: ["doctors"],
-    queryFn: getData,
-  });
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+  };
+  const totalPage = Math.ceil(data?.total_record / ITEMS_PER_PAGE);
+
+  useEffect(() => {
+    if (boxRef.current) {
+      boxRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [page]);
 
   if (error) {
     if (!toast.isActive(id)) {
@@ -95,24 +135,6 @@ export default function Doctors() {
         position: "top",
       });
     }
-  }
-
-  function filterData(data, searchKey = "") {
-    // If the search key is empty or a string, return all data
-    if (!searchKey) {
-      return data;
-    }
-
-    // Filter the data based on the search key matching any key or value
-    return data.filter((doctor) => {
-      for (const key in doctor) {
-        const value = doctor[key]?.toString().toLowerCase();
-        if (value && value.includes(searchKey.toLowerCase())) {
-          return true;
-        }
-      }
-      return false;
-    });
   }
 
   if (!hasPermission("DOCTOR_VIEW")) return <NotAuth />;
@@ -144,9 +166,8 @@ export default function Doctors() {
               placeholder="Search"
               w={400}
               maxW={"50vw"}
-              onChange={(e) => {
-                setsearchTerm(e.target.value);
-              }}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              value={searchQuery}
             />
             <Box>
               <Button
@@ -162,22 +183,33 @@ export default function Doctors() {
             </Box>
           </Flex>
           <DynamicTable
-            data={filterData(data, searchTerm)}
+            data={data?.data}
             onActionClick={
               <YourActionButton
                 onClick={handleActionClick}
                 navigate={navigate}
+                DeleteonOpen={DeleteonOpen}
               />
             }
           />
         </Box>
       )}
 
-      <DeleteDoctor
-        isOpen={DeleteisOpen}
-        onClose={DeleteonClose}
-        data={SelectedData}
-      />
+      {DeleteonOpen && (
+        <DeleteDoctor
+          isOpen={DeleteisOpen}
+          onClose={DeleteonClose}
+          data={SelectedData}
+        />
+      )}
+
+      <Flex justify={"center"} mt={4}>
+        <Pagination
+          currentPage={page}
+          onPageChange={handlePageChange}
+          totalPages={totalPage}
+        />
+      </Flex>
     </Box>
   );
 }
@@ -195,7 +227,7 @@ const YourActionButton = ({ onClick, rowData, DeleteonOpen, navigate }) => {
         }}
         onClick={() => {
           onClick(rowData);
-          navigate(`/doctor/update/${rowData.UserID}`);
+          navigate(`/doctor/update/${rowData.id}`);
         }}
         icon={<FiEdit fontSize={18} color={theme.colors.blue[500]} />}
       />

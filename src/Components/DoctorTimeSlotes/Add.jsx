@@ -46,7 +46,6 @@ export default function AddDoctorTimeSlotes({ isOpen, onClose, doctorID }) {
     },
     onSuccess: () => {
       ShowToast(toast, "success", "Time Slot Added!");
-      ShowToast(toast, "success", "Time Slot Added!sssssssss");
       queryClient.invalidateQueries("time-slotes", doctorID);
       reset();
       onClose();

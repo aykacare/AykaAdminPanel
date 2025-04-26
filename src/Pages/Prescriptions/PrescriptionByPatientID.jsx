@@ -17,7 +17,8 @@ import {
   Text,
   Skeleton,
   Link,
-  useColorModeValue, useDisclosure
+  useColorModeValue,
+  useDisclosure,
 } from "@chakra-ui/react";
 import { GET } from "../../Controllers/ApiControllers";
 import admin from "../../Controllers/admin";
@@ -30,6 +31,7 @@ import useHasPermission from "../../Hooks/HasPermission";
 import NotAuth from "../../Components/NotAuth";
 import { useState } from "react";
 import DeletePrescription from "./DeletePrescription";
+import imageBaseURL from "../../Controllers/image";
 
 function PrescriptionByPatientID({ patientID, queryActive }) {
   const { hasPermission } = useHasPermission();
@@ -37,7 +39,10 @@ function PrescriptionByPatientID({ patientID, queryActive }) {
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   const getData = async () => {
-    const res = await GET(admin.token, `get_prescription/patient/${patientID}`);
+    const res = await GET(
+      admin.token,
+      `get_prescription?patient_id=${patientID}`
+    );
     return res.data;
   };
 
@@ -150,9 +155,15 @@ function PrescriptionByPatientID({ patientID, queryActive }) {
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={() => {
-                              printPdf(
-                                `${api}/prescription/generatePDF/${prescription.id}`
-                              );
+                              if (prescription.pdf_file) {
+                                printPdf(
+                                  `${imageBaseURL}/${prescription.pdf_file}`
+                                );
+                              } else {
+                                printPdf(
+                                  `${api}/prescription/generatePDF/${prescription.id}`
+                                );
+                              }
                             }}
                           />
                           {hasPermission("PRESCRIPTION_UPDATE") && (

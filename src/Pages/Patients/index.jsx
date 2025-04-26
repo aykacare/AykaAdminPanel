@@ -23,7 +23,10 @@ import useDebounce from "../../Hooks/UseDebounce";
 import Pagination from "../../Components/Pagination";
 import useHasPermission from "../../Hooks/HasPermission";
 import NotAuth from "../../Components/NotAuth";
-import useSearchFilter from "../../Hooks/UseSearchFilter";
+import { useSelectedClinic } from "../../Context/SelectedClinic";
+import AddRefer from "../Patient Refer/AddRefer";
+import { FaTrash } from "react-icons/fa";
+import DeletePatient from "./DeletePatient";
 
 const ITEMS_PER_PAGE = 50;
 
@@ -39,7 +42,6 @@ const transformData = (data) => {
       item;
     return {
       id,
-
       name: `${f_name} ${l_name}`,
       phone,
       gender,
@@ -58,18 +60,30 @@ const Patients = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearchQuery = useDebounce(searchQuery, 1000);
   const { startIndex, endIndex } = getPageIndices(page, ITEMS_PER_PAGE);
-
+  const { selectedClinic } = useSelectedClinic();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const {
+    isOpen: referisOpen,
+    onOpen: referonOpen,
+    onClose: referonClose,
+  } = useDisclosure();
+  const {
+    isOpen: DeleteisOpen,
+    onOpen: DeleteonOpen,
+    onClose: DeleteonClose,
+  } = useDisclosure();
   const toast = useToast();
   const navigate = useNavigate();
   const boxRef = useRef(null);
 
   const { isLoading, data, error } = useQuery({
-    queryKey: ["patients", page, debouncedSearchQuery],
+    queryKey: ["patients", page, debouncedSearchQuery, selectedClinic?.id],
     queryFn: async () => {
       const res = await GET(
         admin.token,
-        `get_patient/page?start=${startIndex}&end=${endIndex}`
+        `get_patients?start=${startIndex}&end=${endIndex}&clinic_id=${
+          selectedClinic?.id || ""
+        }&search=${debouncedSearchQuery}`
       );
       return { data: res.data, totalRecord: res.total_record };
     },
@@ -100,7 +114,6 @@ const Patients = () => {
   const transformedData = transformData(data?.data);
   const totalPage = Math.ceil(data?.totalRecord / ITEMS_PER_PAGE);
   const handleActionClick = (rowData) => setSelectedData(rowData);
-  const { handleSearchChange, filteredData } = useSearchFilter(transformedData);
 
   if (!hasPermission("PATIENT_VIEW")) return <NotAuth />;
 
@@ -116,7 +129,7 @@ const Patients = () => {
               placeholder="Search"
               w={400}
               maxW="50vw"
-              onChange={(e) => handleSearchChange(e.target.value)}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
 
             <Button
@@ -131,12 +144,14 @@ const Patients = () => {
           <DynamicTable
             imgLast={true}
             minPad="1px 20px"
-            data={filteredData}
+            data={transformedData}
             onActionClick={
               <YourActionButton
                 onClick={handleActionClick}
                 navigate={navigate}
                 rowData={selectedData}
+                onOpen={referonOpen}
+                DeleteonOpen={DeleteonOpen}
               />
             }
           />
@@ -150,6 +165,21 @@ const Patients = () => {
         />
       </Flex>
       <AddPatients isOpen={isOpen} onClose={onClose} />
+      {referisOpen ? (
+        <AddRefer
+          isOpen={referisOpen}
+          onClose={referonClose}
+          patient={selectedData}
+        />
+      ) : null}
+
+      {DeleteisOpen && (
+        <DeletePatient
+          isOpen={DeleteisOpen}
+          onClose={DeleteonClose}
+          data={selectedData}
+        />
+      )}
     </Box>
   );
 };
@@ -166,10 +196,27 @@ const SkeletonList = () => (
   </Box>
 );
 
-const YourActionButton = ({ onClick, rowData, navigate }) => {
+const YourActionButton = ({
+  onClick,
+  rowData,
+  navigate,
+  onOpen,
+  DeleteonOpen,
+}) => {
   const { hasPermission } = useHasPermission();
   return (
-    <Flex justify="center">
+    <Flex justify="center" align={"center"} gap={2}>
+      <Button
+        isDisabled={!hasPermission("PATIENT_UPDATE")}
+        size="xs"
+        onClick={() => {
+          onClick(rowData);
+          onOpen();
+        }}
+        colorScheme="orange"
+      >
+        Refer
+      </Button>
       <IconButton
         isDisabled={!hasPermission("PATIENT_UPDATE")}
         size="sm"
@@ -180,6 +227,19 @@ const YourActionButton = ({ onClick, rowData, navigate }) => {
           navigate(`/patient/${rowData.id}`);
         }}
         icon={<FiEdit fontSize={18} color={theme.colors.blue[500]} />}
+      />
+      <IconButton
+        isDisabled={!hasPermission("PATIENT_DELETE")}
+        size={"sm"}
+        variant={"ghost"}
+        _hover={{
+          background: "none",
+        }}
+        onClick={() => {
+          onClick(rowData);
+          DeleteonOpen();
+        }}
+        icon={<FaTrash fontSize={18} color={theme.colors.red[500]} />}
       />
     </Flex>
   );

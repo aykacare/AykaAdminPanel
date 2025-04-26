@@ -28,15 +28,13 @@ import NotAuth from "../../Components/NotAuth";
 import moment from "moment";
 import { RefreshCwIcon } from "lucide-react";
 import DateRangeCalender from "../../Components/DateRangeCalender";
-import { daysBack } from "../../Controllers/dateConfig";
+import { useSelectedClinic } from "../../Context/SelectedClinic";
 
 const getPageIndices = (currentPage, itemsPerPage) => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   let endIndex = startIndex + itemsPerPage - 1;
   return { startIndex, endIndex };
 };
-const sevenDaysBack = moment().subtract(daysBack, "days").format("YYYY-MM-DD");
-const today = moment().format("YYYY-MM-DD");
 
 export default function AppointmentStatusLog() {
   const navigate = useNavigate();
@@ -50,28 +48,24 @@ export default function AppointmentStatusLog() {
   const { startIndex, endIndex } = getPageIndices(page, 50);
   const { hasPermission } = useHasPermission();
   const queryClient = useQueryClient();
-
   const [dateRange, setdateRange] = useState({
-    startDate: sevenDaysBack,
-    endDate: today,
+    startDate: null,
+    endDate: null,
   });
-
-  const start_date = moment(dateRange.startDate).format("YYYY-MM-DD");
-  const end_date = moment(dateRange.endDate).format("YYYY-MM-DD");
-
+  const { selectedClinic } = useSelectedClinic();
   const handleStatusChange = (selectedStatuses) => {
     setStatusFilters(selectedStatuses); // Update the state when checkboxes change
   };
 
   const getData = async () => {
-    const url =
-      admin.role.name === "Doctor"
-        ? `get_appointment_status_log_page?start=${startIndex}&end=${endIndex}&search=${debouncedSearchQuery}&start_date=${start_date}&end_date=${end_date}&status=${statusFilters.join(
-            ", "
-          )}&&doctor_id=${admin.id}`
-        : `get_appointment_status_log_page?start=${startIndex}&end=${endIndex}&search=${debouncedSearchQuery}&start_date=${start_date}&end_date=${end_date}&status=${statusFilters.join(
-            ", "
-          )}`;
+    const url = `get_appointment_status_log?start=${startIndex}&end=${endIndex}&search=${debouncedSearchQuery}&start_date=${
+      dateRange.startDate || ""
+    }&end_date=${dateRange.endDate || ""}&status=${statusFilters.join(
+      ", "
+    )}&doctor_id=${admin.role.name === "Doctor" ? admin.id : ""}&clinic_id=${
+      selectedClinic?.id || ""
+    }`;
+
     const res = await GET(admin.token, url);
     const rearrangedArray = res?.data.map((item) => {
       const {
@@ -128,6 +122,7 @@ export default function AppointmentStatusLog() {
       debouncedSearchQuery,
       statusFilters,
       dateRange,
+      selectedClinic?.id,
     ],
     queryFn: getData,
   });

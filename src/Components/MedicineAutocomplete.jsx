@@ -91,28 +91,7 @@ export function MedicineAutocomplete({
           />
           <CommandEmpty>No {name} found.</CommandEmpty>
           <CommandGroup>
-            {value ? (
-              <CommandItem
-                key={value}
-                value={value.toString()}
-                onSelect={(currentValue) => {
-                  setValue(currentValue); // Set value to the selected item
-                  setOpen(false); // Close the popover
-                  handleChange(mainIndex, "medicine_name", value); // Pass the selected value to handleChange
-                  handleChange(mainIndex, "notes", ""); // Pass the notes (if any)
-                }}
-                className="dark:text-white capitalize"
-              >
-                <Check
-                  className={`mr-2 h-4 w-4 ${
-                    value.toLowerCase() === value.toLowerCase()
-                      ? "opacity-100"
-                      : "opacity-0"
-                  }`}
-                />
-                {value}
-              </CommandItem>
-            ) : null}
+           
             {items?.map((item) => (
               <CommandItem
                 key={item.id}

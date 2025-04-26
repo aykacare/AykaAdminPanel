@@ -8,24 +8,25 @@ import ErrorPage from "../../Components/ErrorPage";
 import useHasPermission from "../../Hooks/HasPermission";
 import NotAuth from "../../Components/NotAuth";
 import AppointmentsCalendar from "../Dashboard/Calender";
+import { useSelectedClinic } from "../../Context/SelectedClinic";
 
 export default function AppontmentCalender() {
   const toast = useToast();
   const id = "Errortoast";
   const boxRef = useRef(null);
   const { hasPermission } = useHasPermission();
+  const { selectedClinic } = useSelectedClinic();
 
   const getData = async () => {
-    const url =
-      admin.role.name === "Doctor"
-        ? `get_appointments/doctor/${admin.id}`
-        : `get_appointments`;
+    const url = `get_appointments?doctor_id=${
+      admin.role.name === "Doctor" ? admin.id : ""
+    }&clinic_id=${selectedClinic?.id || ""}`;
     const res = await GET(admin.token, url);
     return res.data;
   };
 
   const { isLoading, data, error } = useQuery({
-    queryKey: ["all-appointments"],
+    queryKey: ["all-appointments", selectedClinic?.id],
     queryFn: getData,
   });
 

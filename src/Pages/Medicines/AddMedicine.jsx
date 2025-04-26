@@ -23,6 +23,10 @@ import showToast from "../../Controllers/ShowToast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import useHasPermission from "../../Hooks/HasPermission";
 import NotAuth from "../../Components/NotAuth";
+import { useState } from "react";
+import { useSelectedClinic } from "../../Context/SelectedClinic";
+import UseClinicsData from "../../Hooks/UseClinicsData";
+import { ClinicComboBox } from "../../Components/ClinicComboBox";
 
 const addPrescribeMedicines = async (data) => {
   const res = await ADD(admin.token, "add_prescribe_medicines", data);
@@ -34,9 +38,12 @@ const addPrescribeMedicines = async (data) => {
 
 export default function AddMedicine({ isOpen, onClose }) {
   const { hasPermission } = useHasPermission();
-  const { register, handleSubmit } = useForm();
+  const { register, handleSubmit, reset } = useForm();
   const toast = useToast();
   const queryClient = useQueryClient();
+  const { selectedClinic } = useSelectedClinic();
+  const { clinicsData } = UseClinicsData();
+  const [selectedClinicID, setselectedClinicID] = useState();
 
   const mutation = useMutation({
     mutationFn: async (data) => {
@@ -46,6 +53,7 @@ export default function AddMedicine({ isOpen, onClose }) {
       queryClient.invalidateQueries("medicines");
       showToast(toast, "success", "Medicine Added!");
       onClose(); // Optionally close the modal on success
+      reset();
     },
     onError: (error) => {
       showToast(toast, "error", error.message);
@@ -53,7 +61,9 @@ export default function AddMedicine({ isOpen, onClose }) {
   });
 
   const onSubmit = (data) => {
-    mutation.mutate(data);
+    if (!selectedClinicID)
+      return showToast(toast, "error", "Please select a clinic");
+    mutation.mutate({ ...data, clinic_id: selectedClinicID.id });
   };
 
   return (
@@ -69,6 +79,15 @@ export default function AddMedicine({ isOpen, onClose }) {
               <>
                 {" "}
                 <FormControl isRequired>
+                  <FormLabel>Clinic</FormLabel>
+                  <ClinicComboBox
+                    data={clinicsData}
+                    name={"clinic"}
+                    defaultData={selectedClinic}
+                    setState={setselectedClinicID}
+                  />
+                </FormControl>
+                <FormControl isRequired mt={5}>
                   <FormLabel fontSize={"sm"}>Name</FormLabel>
                   <Input
                     size={"md"}

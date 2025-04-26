@@ -32,9 +32,9 @@ import {
 } from "@chakra-ui/react";
 import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
-import { ADD, GET } from "../../Controllers/ApiControllers";
+import { ADD, GET, UPDATE } from "../../Controllers/ApiControllers";
 import {
   default as ShowToast,
   default as showToast,
@@ -51,6 +51,10 @@ import Wallet from "../Wallet/Wallet";
 import { walletMinAmount } from "../../Controllers/Wallet";
 import useHasPermission from "../../Hooks/HasPermission";
 import NotAuth from "../../Components/NotAuth";
+import { ClinicComboBox } from "../../Components/ClinicComboBox";
+import UseClinicsData from "../../Hooks/UseClinicsData";
+import DeleteAssignRole from "../Roles/DeleteAssignRole";
+import UserAssignRole from "./UserAssignRole";
 
 export default function UpdateUser() {
   const { id } = useParams();
@@ -85,6 +89,14 @@ export default function UpdateUser() {
   );
 }
 
+const handlePasswordChange = async (data) => {
+  const res = await UPDATE(admin.token, "update_password", data);
+  if (res.response !== 200) {
+    throw new Error(res.message);
+  }
+  return res;
+};
+
 function UserDetails() {
   const param = useParams();
   const navigate = useNavigate();
@@ -94,6 +106,23 @@ function UserDetails() {
   const toast = useToast();
   const inputRef = useRef();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const [password, setpassword] = useState();
+  const { clinicsData } = UseClinicsData();
+  const [selectedClinicID, setselectedClinicID] = useState();
+
+  // assignRole
+  const {
+    isOpen: DeleteisOpen,
+    onOpen: DeleteonOpen,
+    onClose: DeleteonClose,
+  } = useDisclosure();
+
+  const {
+    isOpen: AssignisOpen,
+    onOpen: AssignonOpen,
+    onClose: AssignonClose,
+  } = useDisclosure();
+
   // get doctor details
 
   const { data: userDetails, isLoading: isUserLoading } = useQuery({
@@ -114,6 +143,7 @@ function UserDetails() {
     let formData = {
       id: param.id,
       isd_code,
+      clinic_id: selectedClinicID?.id || userDetails.clinic_id,
       ...data,
     };
 
@@ -178,18 +208,32 @@ function UserDetails() {
     }
   };
 
+  const paswordChngMutate = useMutation({
+    mutationFn: async (data) => {
+      await handlePasswordChange(data);
+    },
+    onSuccess: () => {
+      setpassword("");
+      ShowToast(toast, "success", "Success");
+    },
+    onError: (error) => {
+      ShowToast(toast, "error", error.message);
+    },
+  });
+
   if (isUserLoading || isLoading) return <Loading />;
 
   return (
     <Box>
       <Flex justify={"space-between"} alignItems={"center"}>
-        <Flex alignItems={"center"} gap={2}>
+        <Flex alignItems={"center"} gap={3}>
           {" "}
           <Heading as={"h1"} size={"lg"}>
             {admin.id === param.id ? "Admin Details" : "User Details"}
           </Heading>{" "}
           <Badge
-            p={2}
+            p={1}
+            px={3}
             fontSize="sm"
             textAlign="center"
             borderRadius={6}
@@ -200,6 +244,23 @@ function UserDetails() {
           >
             Wallet Amount - {userDetails.wallet_amount}
           </Badge>
+          <Button
+            size={"sm"}
+            variant={"outline"}
+            ml={5}
+            colorScheme={userDetails.role_id ? "red" : "blue"}
+            onClick={() => {
+              if (userDetails.role_id) {
+                DeleteonOpen();
+              } else {
+                AssignonOpen();
+              }
+            }}
+          >
+            {userDetails.role_id
+              ? `Delete Assigned Role - ${userDetails?.role_name}`
+              : "Assign a Role"}
+          </Button>
         </Flex>
         <Button
           w={120}
@@ -230,12 +291,11 @@ function UserDetails() {
                 <FormLabel>Last Name</FormLabel>
                 <Input
                   placeholder="Last Name"
-                  {...register("l_name", { required: true })}
+                  {...register("l_name", { required: false })}
                   defaultValue={userDetails.l_name}
                 />
               </FormControl>
             </Flex>
-
             <Flex gap={10} mt={5}>
               <FormControl>
                 <FormLabel>Email</FormLabel>
@@ -246,7 +306,7 @@ function UserDetails() {
                   defaultValue={userDetails.email}
                 />
               </FormControl>
-              <FormControl isRequired>
+              <FormControl>
                 <FormLabel>Phone</FormLabel>
                 <InputGroup>
                   <InputLeftAddon
@@ -271,29 +331,40 @@ function UserDetails() {
                 </InputGroup>
               </FormControl>
             </Flex>
-
             <Flex gap={10} mt={5}>
-              <FormControl isRequired>
+              <FormControl>
                 <FormLabel>Date Of Birth (MM/DD/YYYY)</FormLabel>
                 <Input
                   max={todayDate()}
                   placeholder="Select Date"
                   size="md"
                   type="date"
-                  {...register("dob", { required: true })}
+                  {...register("dob", { required: false })}
                   defaultValue={userDetails.dob}
                 />
               </FormControl>
-              <FormControl isRequired>
+              <FormControl>
                 <FormLabel>Gender</FormLabel>
                 <Select
                   placeholder="Select Gender"
-                  {...register("gender", { required: true })}
+                  {...register("gender", { required: false })}
                   defaultValue={userDetails.gender}
                 >
                   <option value="Female">Female</option>{" "}
                   <option value="Male">Male</option>
                 </Select>
+              </FormControl>
+            </Flex>
+            <Flex gap={10} mt={5}>
+              <FormControl>
+                <FormLabel>Clinic</FormLabel>
+                <ClinicComboBox
+                  data={clinicsData}
+                  name={"clinic"}
+                  defaultData={userDetails.clinic_id}
+                  setState={setselectedClinicID}
+                  isDisabled
+                />
               </FormControl>
             </Flex>
             <Button
@@ -306,6 +377,39 @@ function UserDetails() {
             >
               Update
             </Button>
+            <>
+              {" "}
+              <Divider py={2} mb={2} />
+              <Heading as={"h1"} size={"sm"}>
+                Update password -
+              </Heading>{" "}
+              <Flex gap={10} mt={5} align={"flex-end"}>
+                <FormControl w={300}>
+                  <FormLabel>New Password</FormLabel>
+                  <Input
+                    value={password}
+                    type="password"
+                    placeholder="Enter New Password . . ."
+                    onChange={(e) => {
+                      setpassword(e.target.value);
+                    }}
+                  />
+                </FormControl>
+                <Button
+                  colorScheme={"blue"}
+                  onClick={() => {
+                    let user_id = param.id;
+                    paswordChngMutate.mutate({
+                      user_id,
+                      password,
+                    });
+                  }}
+                  isLoading={paswordChngMutate.isPending}
+                >
+                  Update Password
+                </Button>
+              </Flex>
+            </>
           </CardBody>
         </Card>
         <Card
@@ -374,6 +478,26 @@ function UserDetails() {
         onClose={onClose}
         setisd_code={setisd_code}
       />
+
+      {DeleteisOpen && (
+        <DeleteAssignRole
+          isOpen={DeleteisOpen}
+          onClose={DeleteonClose}
+          data={{
+            id: userDetails?.role_assign_id,
+            userID: param.id,
+            role_name: userDetails?.role_name,
+            name: `${userDetails?.f_name} ${userDetails?.l_name}`,
+          }}
+        />
+      )}
+      {AssignisOpen && (
+        <UserAssignRole
+          isOpen={AssignisOpen}
+          onClose={AssignonClose}
+          userID={param.id}
+        />
+      )}
     </Box>
   );
 }

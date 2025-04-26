@@ -36,6 +36,8 @@ import {
 import admin from "../../Controllers/admin";
 import ISDCODEMODAL from "../../Components/IsdModal";
 import todayDate from "../../Controllers/today";
+import UseClinicsData from "../../Hooks/UseClinicsData";
+import { ClinicComboBox } from "../../Components/ClinicComboBox";
 
 export default function AddDoctor() {
   const navigate = useNavigate();
@@ -48,6 +50,8 @@ export default function AddDoctor() {
   const [specializationID, setspecializationID] = useState([]);
   const [isd_code, setisd_code] = useState("+91");
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { clinicsData } = UseClinicsData();
+  const [selectedClinic, setselectedClinic] = useState();
 
   const inputRef = useRef();
 
@@ -58,25 +62,30 @@ export default function AddDoctor() {
 
   const AddNew = async (data) => {
     if (data.password != data.cnfPassword) {
-      return showToast(toast, "error", "password does not match");
+      return showToast(toast, "error", "Password does not match");
     }
 
     if (!departmentID) {
-      return showToast(toast, "error", "select department");
+      return showToast(toast, "error", "Select department");
     }
 
     if (!specializationID) {
-      return showToast(toast, "error", "select specialization");
+      return showToast(toast, "error", "Select specialization");
+    }
+    if (!selectedClinic) {
+      return showToast(toast, "error", "Select clinic");
     }
 
     let formData = {
+      isd_code: isd_code,
       image: profilePicture,
       department: departmentID,
       specialization: specializationID.join(", "),
       active: 0,
+      clinic_id: selectedClinic.id,
       ...data,
     };
-
+    console.log(formData);
     try {
       setisLoading(true);
       const res = await ADD(admin.token, "add_doctor", formData);
@@ -259,6 +268,14 @@ export default function AddDoctor() {
                 />
               </FormControl>
             </Flex>
+            <FormControl mt={5}>
+              <FormLabel>Clinic</FormLabel>
+              <ClinicComboBox
+                data={clinicsData}
+                setState={setselectedClinic}
+                name={"Clinic"}
+              />
+            </FormControl>
 
             <Button
               w={"100%"}

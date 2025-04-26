@@ -64,7 +64,7 @@ export default function UpdatePaymentGetways({ isOpen, onClose, data }) {
       <ModalOverlay />
       <ModalContent as={"form"} onSubmit={handleSubmit(handleUpdate)}>
         <ModalHeader fontSize={18} py={2}>
-          Update Social Media
+          Update Payment Getway
         </ModalHeader>
         <ModalCloseButton />
         <Divider />

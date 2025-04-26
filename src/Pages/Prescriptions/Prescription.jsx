@@ -29,6 +29,7 @@ import api from "../../Controllers/api";
 import useHasPermission from "../../Hooks/HasPermission";
 import { useState } from "react";
 import DeletePrescription from "./DeletePrescription";
+import imageBaseURL from "../../Controllers/image";
 
 function PrescriptionByAppID({ appointmentID, appointmntData }) {
   const { hasPermission } = useHasPermission();
@@ -38,7 +39,7 @@ function PrescriptionByAppID({ appointmentID, appointmntData }) {
   const getData = async () => {
     const res = await GET(
       admin.token,
-      `get_prescription/appointment/${appointmentID}`
+      `get_prescription?appointment_id=${appointmentID}`
     );
 
     return res.data;
@@ -149,9 +150,13 @@ function PrescriptionByAppID({ appointmentID, appointmntData }) {
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={() => {
-                              printPdf(
-                                `${api}/prescription/generatePDF/${prescription.id}`
-                              );
+                              if (prescription.pdf_file) {
+                                printPdf(`${imageBaseURL}/${prescription.pdf_file}`);
+                              } else {
+                                printPdf(
+                                  `${api}/prescription/generatePDF/${prescription.id}`
+                                );
+                              }
                             }}
                           />
                           {hasPermission("PRESCRIPTION_UPDATE") && (

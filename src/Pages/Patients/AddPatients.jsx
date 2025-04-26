@@ -29,6 +29,9 @@ import { ADD } from "../../Controllers/ApiControllers";
 import admin from "../../Controllers/admin";
 import ShowToast from "../../Controllers/ShowToast";
 import todayDate from "../../Controllers/today";
+import { useSelectedClinic } from "../../Context/SelectedClinic";
+import { ClinicComboBox } from "../../Components/ClinicComboBox";
+import UseClinicsData from "../../Hooks/UseClinicsData";
 
 const addPatient = async (data) => {
   const res = await ADD(admin.token, "add_patient", data);
@@ -48,6 +51,9 @@ function AddPatients({ nextFn, isOpen, onClose }) {
     onOpen: onIsdOpen,
     onClose: onIsdClose,
   } = useDisclosure();
+  const { selectedClinic } = useSelectedClinic();
+  const { clinicsData } = UseClinicsData();
+  const [selectedClinicID, setselectedClinicID] = useState();
 
   const mutation = useMutation({
     mutationFn: async (data) => {
@@ -76,10 +82,14 @@ function AddPatients({ nextFn, isOpen, onClose }) {
     if (!isd_code) {
       return ShowToast(toast, "error", "Select ISD Code");
     }
+    if (!selectedClinicID) {
+      return ShowToast(toast, "error", "Select Clinic");
+    }
     let formData = {
       ...data,
       isd_code,
       dob: data.dob ? moment(data.dob).format("YYYY-MM-DD") : "",
+      clinic_id: selectedClinicID.id,
     };
 
     mutation.mutate(formData);
@@ -89,7 +99,7 @@ function AddPatients({ nextFn, isOpen, onClose }) {
       isOpen={isOpen}
       onClose={onClose}
       isCentered
-      size={"xl"}
+      size={"2xl"}
       scrollBehavior="inside"
     >
       <ModalOverlay />
@@ -104,34 +114,37 @@ function AddPatients({ nextFn, isOpen, onClose }) {
           <ModalBody>
             <Grid templateColumns="repeat(3, 1fr)" gap={4} mt={3}>
               <FormControl isRequired>
-                <FormLabel mb={-1}>First Name</FormLabel>
+                <FormLabel>Clinic</FormLabel>
+                <ClinicComboBox
+                  data={clinicsData}
+                  name={"clinic"}
+                  defaultData={selectedClinic}
+                  setState={setselectedClinicID}
+                />
+              </FormControl>
+              <FormControl isRequired>
+                <FormLabel>First Name</FormLabel>
                 <Input
-                  size="sm"
-                  variant="flushed"
+                  size="md"
                   {...register("f_name")}
                   placeholder="First Name"
                 />
               </FormControl>
 
               <FormControl isRequired>
-                <FormLabel mb={-1}>Last Name</FormLabel>
+                <FormLabel>Last Name</FormLabel>
                 <Input
-                  size="sm"
-                  variant="flushed"
                   {...register("l_name")}
                   placeholder="Last Name"
                 />
               </FormControl>
 
               <FormControl isRequired gridcx>
-                <FormLabel mb={-1}>Phone</FormLabel>
+                <FormLabel>Phone</FormLabel>
                 <InputGroup>
                   <InputLeftAddon
-                    h={8}
                     bg={"none"}
-                    borderTop={0}
-                    borderLeft={0}
-                    p={0}
+                    pl={1}
                     pr={2}
                     borderRadius={0}
                     cursor={"pointer"}
@@ -144,8 +157,6 @@ function AddPatients({ nextFn, isOpen, onClose }) {
                     {isd_code} <AiOutlineDown style={{ marginLeft: "10px" }} />
                   </InputLeftAddon>
                   <Input
-                    size="sm"
-                    variant="flushed"
                     type="tel"
                     placeholder="Phone Number"
                     {...register("phone", {
@@ -157,10 +168,8 @@ function AddPatients({ nextFn, isOpen, onClose }) {
               </FormControl>
 
               <FormControl isRequired>
-                <FormLabel mb={-1}>Gender</FormLabel>
+                <FormLabel>Gender</FormLabel>
                 <Select
-                  size="sm"
-                  variant="flushed"
                   defaultValue="Male"
                   {...register("gender")}
                   placeholder="Gender"
@@ -169,25 +178,9 @@ function AddPatients({ nextFn, isOpen, onClose }) {
                   <option value={"Female"}>Female</option>
                 </Select>
               </FormControl>
-              <FormControl isRequired>
-                <FormLabel mb={-1}>Date of Birth</FormLabel>
-                <Input
-                  max={todayDate()}
-                  size="sm"
-                  variant="flushed"
-                  type="date"
-                  {...register("dob")}
-                />
-              </FormControl>
-
-              <FormControl>
-                <FormLabel mb={-1}>City</FormLabel>
-                <Input size="sm" variant="flushed" {...register("city")} />
-              </FormControl>
-
-              <FormControl>
-                <FormLabel mb={-1}>State</FormLabel>
-                <Input size="sm" variant="flushed" {...register("state")} />
+              <FormControl >
+                <FormLabel>Date of Birth</FormLabel>
+                <Input max={todayDate()} type="date" {...register("dob")} />
               </FormControl>
             </Grid>
           </ModalBody>

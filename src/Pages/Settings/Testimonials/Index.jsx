@@ -8,26 +8,38 @@ import {
   Skeleton,
   theme,
   useDisclosure,
-  useToast,
+  useToast
 } from "@chakra-ui/react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { FaTrash } from "react-icons/fa";
 import { FiEdit } from "react-icons/fi";
-import { useQuery } from "@tanstack/react-query";
-import useSearchFilter from "../../../Hooks/UseSearchFilter";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import useDebounce from "../../../Hooks/UseDebounce";
 import DynamicTable from "../../../Components/DataTable";
+import Pagination from "../../../Components/Pagination";
 import { GET } from "../../../Controllers/ApiControllers";
+import ErrorPage from "../../../Components/ErrorPage";
 import admin from "../../../Controllers/admin";
+import useHasPermission from "../../../Hooks/HasPermission";
+import NotAuth from "../../../Components/NotAuth";
 import DeleteSocial from "./delete.JSX";
 import AddTestimonial from "./Add";
 import UpdateTastimonials from "./Update";
-import useHasPermission from "../../../Hooks/HasPermission";
-import NotAuth from "../../../Components/NotAuth";
+import { RefreshCwIcon } from "lucide-react";
+import { useSelectedClinic } from "../../../Context/SelectedClinic";
 
-export default function Testimonials() {
+const Testimonials = () => {
+  const toast = useToast();
+  const id = "ErrorToast";
+  const queryClient = useQueryClient();
+  const boxRef = useRef(null);
+
+  const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearchQuery = useDebounce(searchQuery, 1000);
+  const [SelectedData, setSelectedData] = useState(null);
+
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [SelectedData, setSelectedData] = useState();
-
   const {
     isOpen: DeleteisOpen,
     onOpen: DeleteonOpen,
@@ -38,99 +50,135 @@ export default function Testimonials() {
     onOpen: EditonOpen,
     onClose: EditonClose,
   } = useDisclosure();
-  const toast = useToast();
-  const id = "Errortoast";
 
-  const getData = async () => {
-    const res = await GET(admin.token, "get_testimonial");
-    const newData = res.data.map((item) => {
-      const { id, title, sub_title, description, rating, image } = item;
-      return {
-        id,
-        name: title,
-        sub_title,
-        rating,
-        image,
-        description,
-      };
-    });
-    return newData;
+  const { hasPermission } = useHasPermission();
+
+  const getPageIndices = (currentPage, itemsPerPage) => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage - 1;
+    return { startIndex, endIndex };
+  };
+  const { startIndex, endIndex } = getPageIndices(page, 50);
+  const { selectedClinic } = useSelectedClinic();
+
+  const fetchTestimonials = async () => {
+    const url = `get_testimonial?start=${startIndex}&end=${endIndex}&search=${debouncedSearchQuery}&clinic_id=${
+      selectedClinic?.id || ""
+    }`;
+    const res = await GET(admin.token, url);
+
+    return {
+      data: res.data.map((item) => {
+        const { id, title, sub_title, description, rating, image } = item;
+        return {
+          id,
+          name: title,
+          sub_title,
+          rating,
+          image,
+          description,
+        };
+      }),
+      totalRecord: res.total_record,
+    };
   };
 
-  const handleActionClick = (rowData) => {
-    setSelectedData(rowData);
-  };
-
-  const { isLoading, data, error } = useQuery({
-    queryKey: ["testimonials"],
-    queryFn: getData,
+  const { data, error, isLoading, isFetching } = useQuery({
+    queryKey: ["testimonials", page, debouncedSearchQuery, selectedClinic],
+    queryFn: fetchTestimonials,
   });
 
-  const { handleSearchChange, filteredData } = useSearchFilter(data);
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+  };
+
+  const totalPages = Math.ceil((data?.totalRecord || 0) / 50);
+
+  useEffect(() => {
+    if (boxRef.current) {
+      boxRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [page]);
 
   if (error) {
     if (!toast.isActive(id)) {
       toast({
         id,
-        title: "Oops!",
-        description: "Something bad happened.",
+        title: "Error",
+        description: "Failed to fetch testimonials.",
         status: "error",
-        duration: 2000,
+        duration: 3000,
         isClosable: true,
         position: "top",
       });
     }
+    return <ErrorPage errorCode={error.name} />;
   }
 
-  const { hasPermission } = useHasPermission();
   if (!hasPermission("TESTIMONIAL_VIEW")) return <NotAuth />;
-
   return (
-    <Box>
-      {isLoading || !data ? (
+    <Box ref={boxRef}>
+      {isLoading ? (
         <Box>
-          <Flex mb={5} justify={"space-between"}>
-            <Skeleton w={400} h={8} />
-            <Skeleton w={50} h={8} />
-          </Flex>
-          <Skeleton h={300} w={"100%"} />
+          <Skeleton height={8} width={400} mb={4} />
+          {[...Array(10)].map((_, index) => (
+            <Skeleton key={index} height={8} width="100%" mb={2} />
+          ))}
         </Box>
       ) : (
         <Box>
-          <Flex mb={5} justify={"space-between"} align={"center"}>
-            <Input
-              size={"md"}
-              placeholder="Search"
-              w={400}
-              maxW={"50vw"}
-              onChange={(e) => handleSearchChange(e.target.value)}
-            />
-            <Box>
+          <Flex justifyContent="space-between" mb={4}>
+            <Flex gap={4}>
+              <Input
+                placeholder="Search testimonials"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </Flex>
+            <Flex gap={2}>
               <Button
-                size={"sm"}
+                size="sm"
                 colorScheme="blue"
                 onClick={onOpen}
                 isDisabled={!hasPermission("TESTIMONIAL_ADD")}
               >
                 Add New
               </Button>
-            </Box>
+              <Button
+                isLoading={isFetching}
+                onClick={() => queryClient.invalidateQueries(["testimonials"])}
+                rightIcon={<RefreshCwIcon size={16} />}
+                size="sm"
+                colorScheme="blue"
+              >
+                Refresh
+              </Button>
+            </Flex>
           </Flex>
+
           <DynamicTable
-            minPad={"8px 8px"}
-            data={filteredData}
+            minPad={3}
+            data={data?.data}
             onActionClick={
               <SocialMediaActionButton
-                onClick={handleActionClick}
+                onClick={setSelectedData}
                 DeleteonOpen={DeleteonOpen}
                 EditonOpen={EditonOpen}
               />
             }
           />
+
+          <Flex justifyContent="center" mt={4}>
+            <Pagination
+              currentPage={page}
+              onPageChange={handlePageChange}
+              totalPages={totalPages}
+            />
+          </Flex>
         </Box>
       )}
-      <AddTestimonial isOpen={isOpen} onClose={onClose} />
 
+      <AddTestimonial isOpen={isOpen} onClose={onClose} />
       <DeleteSocial
         isOpen={DeleteisOpen}
         onClose={DeleteonClose}
@@ -145,8 +193,9 @@ export default function Testimonials() {
       )}
     </Box>
   );
-}
+};
 
+export default Testimonials;
 const SocialMediaActionButton = ({
   onClick,
   rowData,

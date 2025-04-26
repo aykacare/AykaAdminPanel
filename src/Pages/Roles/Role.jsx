@@ -13,10 +13,7 @@ import {
 import { useState } from "react";
 import { FaTrash } from "react-icons/fa";
 import { FiEdit } from "react-icons/fi";
-import { useQuery } from "@tanstack/react-query";
 import DynamicTable from "../../Components/DataTable";
-import { GET } from "../../Controllers/ApiControllers";
-import admin from "../../Controllers/admin";
 import UpdateRoleModel from "./Update";
 import AddRoleModel from "./Add";
 import DeleteRole from "./Delete";
@@ -24,10 +21,30 @@ import useSearchFilter from "../../Hooks/UseSearchFilter";
 import useHasPermission from "../../Hooks/HasPermission";
 import NotAuth from "../../Components/NotAuth";
 import AssignRole from "./AssignRole";
+import useRolesData from "../../Hooks/UserRolesData";
+import { Badge } from "@chakra-ui/react";
+
+const transformData = (data) => {
+  return data?.map((item) => {
+    const { id, name, created_at, is_super_admin_role } = item;
+
+    return {
+      id,
+      name,
+      Role_Type: (
+        <Badge colorScheme={is_super_admin_role === 1 ? "purple" : "green"} variant={"solid"}>
+          {is_super_admin_role === 1 ? "Special Role" : "Normal Role"}
+        </Badge>
+      ),
+      created_at,
+    };
+  });
+};
 
 export default function Roles() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [SelectedData, setSelectedData] = useState();
+  const { Roles, rolesLoading, rolesError } = useRolesData();
   const {
     isOpen: DeleteisOpen,
     onOpen: DeleteonOpen,
@@ -45,22 +62,16 @@ export default function Roles() {
   } = useDisclosure();
   const toast = useToast();
   const id = "Errortoast";
-  const getData = async () => {
-    const res = await GET(admin.token, "get_roles");
-    return res.data;
-  };
 
   const handleActionClick = (rowData) => {
     setSelectedData(rowData);
   };
 
-  const { isLoading, data, error } = useQuery({
-    queryKey: ["roles"],
-    queryFn: getData,
-  });
-  const { handleSearchChange, filteredData } = useSearchFilter(data);
+  const { handleSearchChange, filteredData } = useSearchFilter(
+    transformData(Roles)
+  );
 
-  if (error) {
+  if (rolesError) {
     if (!toast.isActive(id)) {
       toast({
         id,
@@ -78,7 +89,7 @@ export default function Roles() {
 
   return (
     <Box>
-      {isLoading || !data ? (
+      {rolesLoading || !Roles ? (
         <Box>
           <Flex mb={5} justify={"space-between"}>
             <Skeleton w={400} h={8} />
@@ -137,7 +148,7 @@ export default function Roles() {
         <AssignRole
           isOpen={AssignisOpen}
           onClose={AssignonClose}
-          Roles={data}
+          Roles={Roles}
         />
       )}
     </Box>

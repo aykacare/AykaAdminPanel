@@ -46,7 +46,6 @@ export default function Specializatiion() {
       const dateB = new Date(a.created_at); // Convert created_at string to Date object
       return dateA - dateB; // Sort in ascending order (use dateB - dateA for descending)
     });
-    console.log(sortedData);
     return sortedData;
   };
 

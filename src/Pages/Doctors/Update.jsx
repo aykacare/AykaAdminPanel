@@ -84,7 +84,7 @@ export default function UpdateDoctor() {
 
   const navigate = useNavigate();
   const [isLoading, setisLoading] = useState();
-  const { register, handleSubmit } = useForm();
+  const { register, handleSubmit, setValue } = useForm();
   const queryClient = useQueryClient();
   const toast = useToast();
   const [departmentID, setdepartmentID] = useState(doctorDetails?.department);
@@ -94,7 +94,7 @@ export default function UpdateDoctor() {
   const inputRef = useRef();
   const [isd_code, setisd_code] = useState(doctorDetails?.isd_code);
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const {hasPermission} = useHasPermission()
+  const { hasPermission } = useHasPermission();
 
   useEffect(() => {
     setdepartmentID(doctorDetails?.department);
@@ -126,13 +126,14 @@ export default function UpdateDoctor() {
       isd_code,
       ...data,
     };
+    console.log(data);
 
     try {
       setisLoading(true);
       const res = await ADD(admin.token, "update_doctor", formData);
       setisLoading(false);
       if (res.response === 200) {
-        ShowToast(toast, "success", "Doctor Updateddddd!");
+        ShowToast(toast, "success", "Doctor Updated!");
         queryClient.invalidateQueries(["doctor", param.id]);
       } else {
         ShowToast(toast, "error", res.message);
@@ -644,7 +645,7 @@ export default function UpdateDoctor() {
                         display="none" // Hide the actual file input
                         ref={inputRef}
                         onChange={handleFileChange}
-                        accept=".jpeg, .svg, .png , .jpg"
+                        accept=".jpeg, .svg, .png , .jpg , .avif"
                       />
                       <Button
                         isDisabled={doctorDetails?.image !== null}
@@ -809,53 +810,11 @@ export default function UpdateDoctor() {
                     </InputGroup>
                   </CardBody>
                 </Card>
-                <Card
-                  mt={5}
-                  bg={useColorModeValue("white", "gray.700")}
-                  h={"fit-content"}
-                  pb={5}
-                >
-                  <CardBody p={2}>
-                    <Heading as={"h3"} size={"sm"}>
-                      Fees
-                    </Heading>
-                    <Divider mt={2} mb={2} />
-
-                    <FormControl>
-                      <FormLabel>OPD Fee</FormLabel>
-                      <Input
-                        size={"sm"}
-                        borderRadius={6}
-                        type="number"
-                        placeholder="OPD Fee"
-                        {...register("opd_fee")}
-                        defaultValue={doctorDetails?.opd_fee}
-                      />
-                    </FormControl>
-                    <FormControl mt={3}>
-                      <FormLabel>Video Fee</FormLabel>
-                      <Input
-                        size={"sm"}
-                        borderRadius={6}
-                        type="number"
-                        placeholder="Video Fee"
-                        {...register("video_fee")}
-                        defaultValue={doctorDetails?.video_fee}
-                      />
-                    </FormControl>
-                    <FormControl mt={3}>
-                      <FormLabel>Emergency Fee</FormLabel>
-                      <Input
-                        size={"sm"}
-                        borderRadius={6}
-                        type="number"
-                        placeholder="Emergency Fee"
-                        {...register("emg_fee")}
-                        defaultValue={doctorDetails?.emg_fee}
-                      />
-                    </FormControl>
-                  </CardBody>
-                </Card>
+                <FeesForm
+                  doctorDetails={doctorDetails}
+                  register={register}
+                  setValue={setValue}
+                />
               </Box>
             </Flex>
           </TabPanel>
@@ -881,6 +840,121 @@ export default function UpdateDoctor() {
     </Box>
   );
 }
+
+// fees form
+const FeesForm = ({ doctorDetails, register, setValue }) => {
+  // Initialize state with doctorDetails or default values
+  const [appointments, setAppointments] = useState({
+    video_appointment: doctorDetails?.video_appointment,
+    clinic_appointment: doctorDetails?.clinic_appointment,
+    emergency_appointment: doctorDetails?.emergency_appointment,
+  });
+
+  // Handle toggle switch change
+  const handleToggle = (type) => {
+    setAppointments((prev) => {
+      const updatedValue = prev[type] === 1 ? 0 : 1;
+      setValue(type, updatedValue); // Update form state
+      return { ...prev, [type]: updatedValue };
+    });
+  };
+
+  useEffect(() => {
+    setAppointments({
+      video_appointment: doctorDetails?.video_appointment,
+      clinic_appointment: doctorDetails?.clinic_appointment,
+      emergency_appointment: doctorDetails?.emergency_appointment,
+    });
+  }, [doctorDetails]);
+
+  return (
+    <Card
+      mt={5}
+      bg={useColorModeValue("white", "gray.700")}
+      h="fit-content"
+      pb={5}
+    >
+      <CardBody p={2}>
+        <Heading as="h3" size="sm">
+          Fees
+        </Heading>
+        <Divider mt={2} mb={2} />
+
+        {/* Toggle Switches */}
+        <FormControl display="flex" alignItems="center" mb={2}>
+          <FormLabel mb="0">OPD Appointment - </FormLabel>
+          <Switch
+            isChecked={appointments.clinic_appointment === 1}
+            onChange={() => handleToggle("clinic_appointment")}
+            size={"sm"}
+          />
+        </FormControl>
+        {appointments.clinic_appointment === 1 && (
+          <FormControl>
+            <FormLabel>OPD Fee</FormLabel>
+            <Input
+              size="sm"
+              borderRadius={6}
+              type="number"
+              placeholder="OPD Fee"
+              {...register("opd_fee")}
+              defaultValue={doctorDetails?.opd_fee}
+            />
+          </FormControl>
+        )}
+
+        <Divider my={3} />
+
+        <FormControl display="flex" alignItems="center" mb={2}>
+          <FormLabel mb="0">Video Appointment - </FormLabel>
+          <Switch
+            isChecked={appointments.video_appointment === 1}
+            onChange={() => handleToggle("video_appointment")}
+            size={"sm"}
+          />
+        </FormControl>
+        {appointments.video_appointment === 1 && (
+          <FormControl mt={3}>
+            <FormLabel>Video Fee</FormLabel>
+            <Input
+              size="sm"
+              borderRadius={6}
+              type="number"
+              placeholder="Video Fee"
+              {...register("video_fee")}
+              defaultValue={doctorDetails?.video_fee}
+            />
+          </FormControl>
+        )}
+
+        <Divider my={3} />
+        <FormControl display="flex" alignItems="center" mb={2}>
+          <FormLabel mb="0">Emergency Appointment - </FormLabel>
+          <Switch
+            isChecked={appointments.emergency_appointment === 1}
+            onChange={() => handleToggle("emergency_appointment")}
+            size={"sm"}
+          />
+        </FormControl>
+        {appointments.emergency_appointment === 1 && (
+          <FormControl mt={3}>
+            <FormLabel>Emergency Fee</FormLabel>
+            <Input
+              size="sm"
+              borderRadius={6}
+              type="number"
+              placeholder="Emergency Fee"
+              {...register("emg_fee")}
+              defaultValue={doctorDetails?.emg_fee}
+            />
+          </FormControl>
+        )}
+
+        {/* Input Fields (Shown Conditionally) */}
+      </CardBody>
+    </Card>
+  );
+};
 
 const IsActiveSwitch = ({ id, isActive }) => {
   const { hasPermission } = useHasPermission();

@@ -54,7 +54,7 @@ const filterRecentData = (data, lastDays) => {
         ),
       "Payment Status":
         payment_status === "Paid" ? (
-          <Badge colorScheme="green">{payment_status}</Badge>
+          <Badge coorScheme="green">{payment_status}</Badge>
         ) : payment_status === "Refunded" ? (
           <Badge colorScheme="blue">{payment_status}</Badge>
         ) : (

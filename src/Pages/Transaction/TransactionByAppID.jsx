@@ -57,7 +57,7 @@ export default function TransactionByAppID({ appointmentID }) {
   const getData = async () => {
     const res = await GET(
       admin.token,
-      `get_all_transaction/appointment/${appointmentID}`
+      `get_all_transaction?appointment_id=${appointmentID}`
     );
     const rearrangedTransactions = res?.data.map((transaction) => {
       const {

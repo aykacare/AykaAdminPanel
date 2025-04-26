@@ -35,7 +35,7 @@ export default function PatientAppointemnts({ patientID }) {
   const { hasPermission } = useHasPermission();
 
   const getData = async () => {
-    const url = `get_appointments/patient/${patientID}`;
+    const url = `get_appointments?patient_id=${patientID}`;
 
     const res = await GET(admin.token, url);
     const rearrangedArray = res?.data.map((item) => {

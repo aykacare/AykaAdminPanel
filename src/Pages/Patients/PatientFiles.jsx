@@ -40,7 +40,7 @@ export default function PatientFiles({ id }) {
   } = useDisclosure();
 
   const getPatientFiles = async () => {
-    const res = await GET(admin.token, `get_patient_file/patient/${id}`);
+    const res = await GET(admin.token, `get_patient_file?patient_id=${id}`);
     return res.data;
   };
   const { data: patientFiles, isLoading: patientFilesLoading } = useQuery({

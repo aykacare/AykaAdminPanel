@@ -16,10 +16,8 @@ import {
   Switch,
   useColorModeValue,
   useToast,
-  useDisclosure,
-  Tooltip,
-  FormControl,
-  theme,
+  useDisclosure, FormControl,
+  theme
 } from "@chakra-ui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FiEdit } from "react-icons/fi";
@@ -27,6 +25,7 @@ import { GET, UPDATE } from "../../../Controllers/ApiControllers";
 import admin from "../../../Controllers/admin";
 import ShowToast from "../../../Controllers/ShowToast";
 import UpdatePaymentGetways from "./Update";
+import MaskedCell from "../../../Components/MaskedCell";
 
 const getData = async () => {
   const res = await GET(admin.token, "get_payment_gateway");
@@ -215,49 +214,6 @@ function PaymentGetways({ currentTab, activeTab }) {
     </Box>
   );
 }
-
-const MaskedCell = ({ value }) => {
-  const [show, setShow] = useState(false);
-  function maskApiKey(apiKey) {
-    // Check if the key length is sufficient for masking
-    if (apiKey.length <= 7) {
-      const firstPart = apiKey.slice(0, 1); // First 3 characters
-      const lastPart = apiKey.slice(-1); // Last 4 characters
-      const maskedPart = "*".repeat(apiKey.length - 5); // If it's too short, return it as is
-      return `${firstPart}${maskedPart}${lastPart}`;
-    } else {
-      const firstPart = apiKey.slice(0, 3); // First 3 characters
-      const lastPart = apiKey.slice(-4); // Last 4 characters
-      const maskedPart = "*".repeat(apiKey.length - 7); // Mask the middle part
-      return `${firstPart}${maskedPart}${lastPart}`;
-    }
-  }
-
-  return (
-    <Td
-      w={"fit-content"}
-      maxW="200px"
-      overflow={"hidden"}
-      borderRight={0}
-      borderLeft={0}
-      onMouseEnter={() => setShow(true)}
-      onMouseLeave={() => setShow(false)}
-    >
-      <Tooltip
-        label={maskApiKey(value)}
-        isOpen={show}
-        placement="top"
-        hasArrow
-        bg="blue.500"
-        color="white"
-        transition="all 0.2s"
-        borderRadius="md"
-      >
-        <span>*************</span>
-      </Tooltip>
-    </Td>
-  );
-};
 
 const IsActive = ({ id, isActive }) => {
   const toast = useToast();

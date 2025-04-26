@@ -70,7 +70,7 @@ function NotificationIcon() {
         pos={"relative"}
         onClick={() => {
           setUnreadCount(false);
-          setIsOpen(true);
+          navigate("/notification");
         }}
       >
         <BiBell fontSize={"18px"} />

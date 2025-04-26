@@ -28,6 +28,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ADD } from "../../../Controllers/ApiControllers";
 import ShowToast from "../../../Controllers/ShowToast";
 import admin from "../../../Controllers/admin";
+import UseClinicsData from "../../../Hooks/UseClinicsData";
+import { ClinicComboBox } from "../../../Components/ClinicComboBox";
+import { useSelectedClinic } from "../../../Context/SelectedClinic";
 
 export default function AddTestimonial({ isOpen, onClose }) {
   const [isLoading, setisLoading] = useState();
@@ -36,14 +39,33 @@ export default function AddTestimonial({ isOpen, onClose }) {
   const { register, handleSubmit, reset } = useForm();
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { selectedClinic } = useSelectedClinic();
+  const { clinicsData } = UseClinicsData();
+  const [selectedClinicID, setselectedClinicID] = useState();
 
   const handleDrop = (event) => {
     event.preventDefault();
-
     const file = event.dataTransfer.files[0];
+    const allowedTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/svg+xml",
+    ];
+    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    if (!file) return;
+    if (!allowedTypes.includes(file.type)) {
+      return ShowToast(
+        toast,
+        "error",
+        "Only JPEG, JPG, PNG, or SVG files are allowed."
+      );
+    }
+    if (file.size > maxSize) {
+      return ShowToast(toast, "error", "File size should not exceed 5MB.");
+    }
     setSelectedFile(file);
   };
-
   const handleDragOver = (event) => {
     event.preventDefault();
   };
@@ -54,9 +76,14 @@ export default function AddTestimonial({ isOpen, onClose }) {
   };
 
   const AddNewDepartment = async (data) => {
+    if (!selectedClinicID) {
+      return ShowToast(toast, "error", "Please Select Clinic");
+    }
+
     let formData = {
       ...data,
       image: selectedFile,
+      clinic_id: selectedClinicID.id,
     };
     try {
       setisLoading(true);
@@ -93,12 +120,22 @@ export default function AddTestimonial({ isOpen, onClose }) {
         <ModalBody>
           <Box pb={3}>
             <FormControl isRequired>
+              <FormLabel>Clinic</FormLabel>
+              <ClinicComboBox
+                data={clinicsData}
+                name={"clinic"}
+                defaultData={selectedClinic}
+                setState={setselectedClinicID}
+              />
+            </FormControl>
+            <FormControl isRequired mt={5}>
               <FormLabel>Title</FormLabel>
               <Input
                 placeholder="Title"
                 {...register("title", { required: true })}
               />
             </FormControl>
+
             <FormControl isRequired mt={5}>
               <FormLabel>Sub Title</FormLabel>
               <Input

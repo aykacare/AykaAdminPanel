@@ -24,12 +24,12 @@ export default function PaymentsByAppID({ appointmentID }) {
   const getData = async () => {
     const res = await GET(
       admin.token,
-      `get_appointment_payment/appintment/${appointmentID}`
+      `get_appointment_payment?appointment_id=${appointmentID}`
     );
     if (res.data === null) {
       return [];
     } else {
-      const rearrangedTransaction = (transaction) => {
+      const rearrangedTransaction = res?.data?.map((transaction) => {
         const {
           id,
           txn_id,
@@ -46,37 +46,31 @@ export default function PaymentsByAppID({ appointmentID }) {
           user_f_name,
           user_l_name,
         } = transaction;
-
-        return [
-          {
-            id,
-            "txn ID": txn_id,
-            invoiceID: invoice_id,
-            patient: (
-              <Link to={`/patient/${patient_id}`}>
-                {`${patient_f_name} ${patient_l_name}`}
-              </Link>
-            ),
-            user: (
-              <Link
-                to={`/user/${user_id}`}
-              >{`${user_f_name} ${user_l_name}`}</Link>
-            ),
-            "APP ID": (
-              <Link to={`/appointment/${appointment_id}`}>
-                {appointment_id}
-              </Link>
-            ),
-            amount,
-            "payment Method": payment_method,
-            "Time stamp": moment(payment_time_stamp).format("D MMM YY hh.mmA"),
-            "created At": moment(created_at).format("D MMM YY hh:mmA"),
-          },
-        ];
-      };
-
+        return {
+          id,
+          "txn ID": txn_id,
+          invoiceID: invoice_id,
+          patient: (
+            <Link to={`/patient/${patient_id}`}>
+              {`${patient_f_name} ${patient_l_name}`}
+            </Link>
+          ),
+          user: (
+            <Link
+              to={`/user/${user_id}`}
+            >{`${user_f_name} ${user_l_name}`}</Link>
+          ),
+          "APP ID": (
+            <Link to={`/appointment/${appointment_id}`}>{appointment_id}</Link>
+          ),
+          amount,
+          "payment Method": payment_method,
+          "Time stamp": moment(payment_time_stamp).format("D MMM YY hh.mmA"),
+          "created At": moment(created_at).format("D MMM YY hh:mmA"),
+        };
+      });
+      return rearrangedTransaction;
       // Assuming res is the response from your GET request
-      return rearrangedTransaction(res.data);
     }
   };
 

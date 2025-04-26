@@ -20,7 +20,12 @@ const useHasPermission = () => {
 
   // Function to check if the user has a specific permission
   const hasPermission = (permissionName) => {
-    if (admin.role.name === "Admin" || admin.role.name === "admin") {
+    if (
+      admin.role.name === "Super Admin" ||
+      admin.role.name === "super admin" ||
+      admin.role.role_id === 14 ||
+      admin.role.role_id === "14"
+    ) {
       return true;
     } else {
       return data?.some(

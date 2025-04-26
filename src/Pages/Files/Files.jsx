@@ -30,17 +30,13 @@ import imageBaseURL from "../../Controllers/image";
 import ErrorPage from "../../Components/ErrorPage";
 import AddPatientsFiles from "./AddFile";
 import DeletePatientFiles from "../Patients/DeletePatientFile";
-import moment from "moment"; // For date manipulation
-import { daysBack } from "../../Controllers/dateConfig";
+import { useSelectedClinic } from "../../Context/SelectedClinic";
 
 const getPageIndices = (currentPage, itemsPerPage) => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   let endIndex = startIndex + itemsPerPage - 1;
   return { startIndex, endIndex };
 };
-
-const sevenDaysBack = moment().subtract(daysBack, "days").format("YYYY-MM-DD");
-const today = moment().format("YYYY-MM-DD");
 
 export default function Files() {
   const [selectedData, setselectedData] = useState();
@@ -56,20 +52,16 @@ export default function Files() {
     onOpen: DeleteonOpen,
     onClose: DeleteonClose,
   } = useDisclosure();
-
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearchQuery = useDebounce(searchQuery, 1000); // Debounce search query
   const [dateRange, setDateRange] = useState({
-    startDate: sevenDaysBack,
-    endDate: today,
+    startDate: null,
+    endDate: null,
   });
-
   const { startIndex, endIndex } = getPageIndices(page, 50);
   const boxRef = useRef(null);
-
-  const start_date = moment(dateRange.startDate).format("YYYY-MM-DD");
-  const end_date = moment(dateRange.endDate).format("YYYY-MM-DD");
+  const { selectedClinic } = useSelectedClinic();
 
   const handleActionClick = (rowData) => {
     setselectedData(rowData);
@@ -78,7 +70,11 @@ export default function Files() {
   const getPatientFiles = async () => {
     const res = await GET(
       admin.token,
-      `get_patient_file_page?start=${startIndex}&end=${endIndex}&search=${debouncedSearchQuery}&start_date=${start_date}&end_date=${end_date}`
+      `get_patient_file?start=${startIndex}&end=${endIndex}&search=${debouncedSearchQuery}&start_date=${
+        dateRange.startDate || ""
+      }&end_date=${dateRange.endDate || ""}&clinic_id=${
+        selectedClinic?.id || ""
+      }`
     );
     const rearrangedArray = res?.data.map((item) => {
       const {
@@ -97,7 +93,8 @@ export default function Files() {
       return {
         id: id,
         patient_id,
-        "file name": (
+        file_name,
+        file: (
           <Link
             isExternal
             href={`${imageBaseURL}/${file}`}
@@ -125,7 +122,13 @@ export default function Files() {
     isLoading: patientFilesLoading,
     error,
   } = useQuery({
-    queryKey: ["all-files", debouncedSearchQuery, page, start_date, end_date],
+    queryKey: [
+      "all-files",
+      debouncedSearchQuery,
+      page,
+      dateRange,
+      selectedClinic,
+    ],
     queryFn: getPatientFiles,
   });
 

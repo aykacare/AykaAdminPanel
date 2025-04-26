@@ -28,6 +28,9 @@ import ShowToast from "../../Controllers/ShowToast";
 import admin from "../../Controllers/admin";
 import usePatientData from "../../Hooks/UsePatientsData";
 import UsersCombobox from "../../Components/UsersComboBox";
+import { useSelectedClinic } from "../../Context/SelectedClinic";
+import UseClinicsData from "../../Hooks/UseClinicsData";
+import { ClinicComboBox } from "../../Components/ClinicComboBox";
 
 export default function AddPatientsFiles({ isOpen, onClose }) {
   const [isLoading, setisLoading] = useState();
@@ -39,6 +42,9 @@ export default function AddPatientsFiles({ isOpen, onClose }) {
   const MAX_FILE_SIZE = 5 * 1024 * 1024;
   const { patientsData } = usePatientData();
   const [patient, setpatient] = useState();
+  const { selectedClinic } = useSelectedClinic();
+  const { clinicsData } = UseClinicsData();
+  const [selectedClinicID, setselectedClinicID] = useState();
 
   const handleDrop = (event) => {
     event.preventDefault();
@@ -70,11 +76,15 @@ export default function AddPatientsFiles({ isOpen, onClose }) {
     if (!selectedFile) {
       return ShowToast(toast, "error", "Please Select File");
     }
+    if (!selectedClinicID) {
+      return ShowToast(toast, "error", "Please Select Clinic");
+    }
 
     let formData = {
       ...data,
       patient_id: patient.id,
       file: selectedFile,
+      clinic_id: selectedClinicID.id,
     };
     try {
       setisLoading(true);
@@ -113,6 +123,15 @@ export default function AddPatientsFiles({ isOpen, onClose }) {
                 name={"Patient"}
                 setState={setpatient}
                 addNew={false}
+              />
+            </FormControl>
+            <FormControl isRequired mt={5}>
+              <FormLabel>Clinic</FormLabel>
+              <ClinicComboBox
+                data={clinicsData}
+                name={"clinic"}
+                defaultData={selectedClinic}
+                setState={setselectedClinicID}
               />
             </FormControl>
             <FormControl isRequired mt={5}>

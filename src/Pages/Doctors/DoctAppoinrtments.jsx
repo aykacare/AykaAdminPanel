@@ -53,7 +53,7 @@ export default function DoctAppointments({ doctID }) {
   };
 
   const getData = async () => {
-    const url = `get_appointments/doctor_id/page?start=${startIndex}&end=${endIndex}&doctor_id=${doctID}`;
+    const url = `get_appointments?doctor_id=${doctID}&start=${startIndex}&end=${endIndex}`;
     const res = await GET(admin.token, url);
     const rearrangedArray = res?.data.map((item) => {
       const {
@@ -124,7 +124,13 @@ export default function DoctAppointments({ doctID }) {
   };
 
   const { isLoading, data, error } = useQuery({
-    queryKey: ["appointments", page, debouncedSearchQuery, statusFilters , doctID],
+    queryKey: [
+      "appointments",
+      page,
+      debouncedSearchQuery,
+      statusFilters,
+      doctID,
+    ],
     queryFn: getData,
   });
 
@@ -214,7 +220,7 @@ export default function DoctAppointments({ doctID }) {
           </CheckboxGroup>
 
           <DynamicTable
-            minPad={"1px 10px"}
+            minPad={"10px 10px"}
             data={data?.data}
             onActionClick={
               <YourActionButton onClick={() => {}} navigate={navigate} />
@@ -241,18 +247,18 @@ const YourActionButton = ({ onClick, rowData, navigate }) => {
   const { hasPermission } = useHasPermission();
   return (
     <Flex justify={"center"}>
-      {hasPermission("APPOINTMENT_UPDATE") && (
-        <IconButton
-          size={"sm"}
-          variant={"ghost"}
-          _hover={{ background: "none" }}
-          onClick={() => {
-            onClick(rowData);
-            navigate(`/appointment/${rowData.id}`);
-          }}
-          icon={<FiEdit fontSize={18} color={theme.colors.blue[500]} />}
-        />
-      )}
+      <IconButton
+        isdisabled={!hasPermission("APPOINTMENT_UPDATE")}
+        size={"sm"}
+        variant={"ghost"}
+        _hover={{ background: "none" }}
+        onClick={() => {
+          onClick(rowData);
+          navigate(`/appointment/${rowData.id}`);
+        }}
+        icon={<FiEdit fontSize={18} color={theme.colors.blue[500]} />}
+      />
+      
     </Flex>
   );
 };

@@ -32,9 +32,9 @@ import { FaTrash } from "react-icons/fa";
 import DeletePrescription from "./DeletePrescription";
 import Pagination from "../../Components/Pagination";
 import DateRangeCalender from "../../Components/DateRangeCalender";
-import moment from "moment";
 import useDebounce from "../../Hooks/UseDebounce";
-import { daysBack } from "../../Controllers/dateConfig";
+import { useSelectedClinic } from "../../Context/SelectedClinic";
+import imageBaseURL from "../../Controllers/image";
 
 // Helper function to calculate pagination indices
 const getPageIndices = (currentPage, itemsPerPage) => {
@@ -43,32 +43,28 @@ const getPageIndices = (currentPage, itemsPerPage) => {
   return { startIndex, endIndex };
 };
 
-const sevenDaysBack = moment().subtract(daysBack, "days").format("YYYY-MM-DD");
-const today = moment().format("YYYY-MM-DD");
-
 function AllPrescription() {
   const { hasPermission } = useHasPermission();
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearchQuery = useDebounce(searchQuery, 1000);
   const [dateRange, setDateRange] = useState({
-    startDate: sevenDaysBack,
-    endDate: today,
+    startDate: null,
+    endDate: null,
   });
-
   const { startIndex, endIndex } = getPageIndices(page, 50); // 10 items per page
-
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedData, setSelectedData] = useState();
+  const { selectedClinic } = useSelectedClinic();
 
   const getData = async () => {
-    const { startDate, endDate } = dateRange;
     const res = await GET(
       admin.token,
-      `get_prescription_page?start=${startIndex}&end=${endIndex}&search=${debouncedSearchQuery}&start_date=${startDate}&end_date=${endDate}`
-    );
-    console.log(
-      `get_prescription_page?start=${startIndex}&end=${endIndex}&search=${debouncedSearchQuery}&start_date=${startDate}&end_date=${endDate}`
+      `get_prescription?start=${startIndex}&end=${endIndex}&search=${debouncedSearchQuery}&start_date=${
+        dateRange.startDate || ""
+      }&end_date=${dateRange.endDate || ""}&clinic_id=${
+        selectedClinic?.id || ""
+      }&doctor_id=${admin.role.name === "Doctor" ? admin.id : ""}`
     );
     return {
       data: res.data,
@@ -77,7 +73,13 @@ function AllPrescription() {
   };
 
   const { isLoading, data, error } = useQuery({
-    queryKey: ["prescriptions", page, debouncedSearchQuery, dateRange],
+    queryKey: [
+      "prescriptions",
+      page,
+      debouncedSearchQuery,
+      dateRange,
+      selectedClinic,
+    ],
     queryFn: getData,
   });
 
@@ -151,10 +153,10 @@ function AllPrescription() {
             >
               <Thead background={useColorModeValue("blue.50", "blue.700")}>
                 <Tr>
-                  <Th padding={2}>Action</Th>
                   <Th padding={2}>ID</Th>
                   <Th padding={2}>Appointment ID</Th>
                   <Th padding={2}>Patient</Th>
+                  <Th padding={2}>Doctor</Th>
                   <Th padding={2}>Date</Th>
                   <Th padding={2}>Pulse Rate</Th>
                   <Th padding={2}>Temperature</Th>
@@ -167,32 +169,30 @@ function AllPrescription() {
                 {data?.data.length > 0 ? (
                   data?.data.map((prescription) => (
                     <Tr key={prescription.id}>
-                      <Td padding={2}>
-                        <IconButton
-                          size={"sm"}
-                          variant={"ghost"}
-                          _hover={{ background: "none" }}
-                          onClick={() => {
-                            onOpen();
-                            setSelectedData(prescription);
-                          }}
-                          icon={
-                            <FaTrash
-                              fontSize={18}
-                              color={theme.colors.red[500]}
-                            />
-                          }
-                        />
+                      <Td py={3} px={2}>
+                        {prescription.id}
                       </Td>
-                      <Td padding={2}>{prescription.id}</Td>
-                      <Td padding={2}>{prescription.appointment_id}</Td>
+                      <Td py={3} px={2}>
+                        {prescription.appointment_id}
+                      </Td>
                       <Td
-                        padding={2}
+                        py={3}
+                        px={2}
                       >{`${prescription.patient_f_name} ${prescription.patient_l_name}`}</Td>
-                      <Td padding={2}>{prescription.date}</Td>
-                      <Td padding={2}>{prescription.pulse_rate}</Td>
-                      <Td padding={2}>{prescription.temperature}</Td>
-                      <Td padding={2} maxW={10}>
+                      <Td
+                        py={3}
+                        px={2}
+                      >{`${prescription.doctor_f_name} ${prescription.doctor_l_name}`}</Td>
+                      <Td py={3} px={2}>
+                        {prescription.date}
+                      </Td>
+                      <Td py={3} px={2}>
+                        {prescription.pulse_rate}
+                      </Td>
+                      <Td py={3} px={2}>
+                        {prescription.temperature}
+                      </Td>
+                      <Td py={3} px={2} maxW={10}>
                         <Flex alignItems={"center"} justifyContent={"center"}>
                           <IconButton
                             as={Link}
@@ -204,9 +204,13 @@ function AllPrescription() {
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={() => {
-                              printPdf(
-                                `${api}/prescription/generatePDF/${prescription.id}`
-                              );
+                              if (prescription.pdf_file) {
+                                printPdf(`${imageBaseURL}/${prescription.pdf_file}`);
+                              } else {
+                                printPdf(
+                                  `${api}/prescription/generatePDF/${prescription.id}`
+                                );
+                              }
                             }}
                           />
                           {hasPermission("PRESCRIPTION_UPDATE") && (
@@ -218,6 +222,23 @@ function AllPrescription() {
                               size={"sm"}
                               variant={"ghost"}
                               to={`/prescription/${prescription?.id}?appointmentID=${prescription?.appointment_id}&patientID=${prescription?.patient_id}`}
+                            />
+                          )}
+                          {hasPermission("PRESCRIPTION_DELETE") && (
+                            <IconButton
+                              size={"sm"}
+                              variant={"ghost"}
+                              _hover={{ background: "none" }}
+                              onClick={() => {
+                                onOpen();
+                                setSelectedData(prescription);
+                              }}
+                              icon={
+                                <FaTrash
+                                  fontSize={18}
+                                  color={theme.colors.red[500]}
+                                />
+                              }
                             />
                           )}
                         </Flex>

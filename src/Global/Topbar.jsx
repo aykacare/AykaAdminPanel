@@ -1,4 +1,5 @@
-﻿import { BiCamera } from "react-icons/bi";
+﻿import { FaHospitalUser } from "react-icons/fa";
+/* eslint-disable react-hooks/rules-of-hooks */
 import { AiFillSetting } from "react-icons/ai";
 import { FiLogOut } from "react-icons/fi";
 import { RiLockPasswordLine } from "react-icons/ri";
@@ -12,66 +13,37 @@ import {
   MenuList,
   MenuItem,
   Box,
-  ModalOverlay,
-  ModalContent,
-  ModalBody,
-  Modal,
   Avatar,
   Image,
   useColorMode,
   Divider,
-  Heading,
-  Center,
-  Stack,
-  FormControl,
-  FormLabel,
-  InputGroup,
-  InputLeftElement,
   Input,
   VStack,
-  useMediaQuery,
   Button,
   useDisclosure,
-  useToast,
 } from "@chakra-ui/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { FiSun, FiMoon, FiUser } from "react-icons/fi";
 import { useLocation, useNavigate } from "react-router-dom";
 import admin from "../Controllers/admin";
-import moment from "moment";
-import { useForm } from "react-hook-form";
-import { BsEnvelopeAt, BsPersonAdd, BsPhone } from "react-icons/bs";
 import NotificationIcon from "../Components/Notification";
 import UpdateAdminPassword from "../Components/UpdatePassword";
 import useSettingsData from "../Hooks/SettingData";
 import imageBaseURL from "../Controllers/image";
 import useHasPermission from "../Hooks/HasPermission";
-import { ADD } from "../Controllers/ApiControllers";
-import { useMutation } from "@tanstack/react-query";
-import ShowToast from "../Controllers/ShowToast";
 import Logout from "../Controllers/logout";
+import UseClinicsData from "../Hooks/UseClinicsData";
+import { useSelectedClinic } from "../Context/SelectedClinic";
+import { motion } from "framer-motion";
 
-const updateUser = async (data) => {
-  const res = await ADD(admin.token, "update_user", data);
-  if (res.response !== 200) {
-    throw new Error(res.message);
-  }
-  return res;
-};
 export default function Topbar() {
-  const [isModalOpen, setModalOpen] = useState(false);
   const { colorMode, toggleColorMode } = useColorMode();
   const Uselocation = useLocation();
   const location = Uselocation.pathname.split("/")[1];
-  const { register, handleSubmit } = useForm();
-  const [isMobile] = useMediaQuery("(max-width: 600px)");
   const { isOpen, onOpen, onClose } = useDisclosure();
   const navigate = useNavigate();
   const { settingsData } = useSettingsData();
   const { hasPermission } = useHasPermission();
-  const toast = useToast();
-  const openModal = () => setModalOpen(true);
-  const closeModal = () => setModalOpen(false);
 
   useEffect(() => {
     colorMode === "dark"
@@ -83,23 +55,6 @@ export default function Topbar() {
   const logo = settingsData?.find((value) => value.id_name === "logo");
 
   // handle updateMutation
-  const mutation = useMutation({
-    mutationFn: async (data) => {
-      await updateUser(data);
-    },
-    onError: (error) => {
-      ShowToast(toast, "error", error.message);
-    },
-    onSuccess: () => {
-      ShowToast(toast, "success", "updated!");
-      closeModal();
-    },
-  });
-
-  const handleUpdate = (data) => {
-    const formData = { ...data, id: admin.id };
-    mutation.mutate(formData);
-  };
 
   return (
     <Flex
@@ -133,7 +88,8 @@ export default function Topbar() {
         </Text>
       </Box>
 
-      <Flex>
+      <Flex align={"center"}>
+        <ClinicSelctor />
         <NotificationIcon />
         <IconButton
           aria-label="Toggle color mode"
@@ -172,7 +128,16 @@ export default function Topbar() {
               </Text>
             </Box>
             <Divider mb={3} />
-            <MenuItem onClick={openModal} icon={<FiUser />}>
+            <MenuItem
+              onClick={() => {
+                admin.role.name.toLowerCase() === "doctor"
+                  ? navigate(`/doctor/profile`)
+                  : admin.role.name.toLowerCase() === "clinic"
+                  ? navigate(`/clinic/self/profile/update/${admin.clinic_id}`)
+                  : navigate(`/user/update/${admin.id}`);
+              }}
+              icon={<FiUser />}
+            >
               Account
             </MenuItem>
             <MenuItem onClick={onOpen} icon={<RiLockPasswordLine />}>
@@ -200,211 +165,171 @@ export default function Topbar() {
           </MenuList>
         </Menu>
       </Flex>
-      <Modal
-        isOpen={isModalOpen}
-        onClose={closeModal}
-        isCentered
-        scrollBehavior={isMobile ? "outside" : "inside"}
-        size={"xl"}
-      >
-        <ModalOverlay />
-        <ModalContent p={0} m={2} bg={"transparent"}>
-          {" "}
-          <ModalBody
-            p={0}
-            sx={{
-              "&::-webkit-scrollbar": {
-                display: "none",
-              },
-              scrollbarWidth: "none",
-              msOverflowStyle: "none",
-            }}
-            as={"form"}
-            onSubmit={handleSubmit(handleUpdate)}
-          >
-            {" "}
-            <Center py={0} width={"100%"} minHeight={!isMobile && "80vh"}>
-              <Box
-                maxW={"100%"}
-                w={"full"}
-                bg={useColorModeValue("white", "gray.800")}
-                boxShadow={"2xl"}
-                rounded={"md"}
-                overflow={"hidden"}
-              >
-                <Image
-                  h={"120px"}
-                  w={"full"}
-                  src={
-                    "https://images.unsplash.com/photo-1612865547334-09cb8cb455da?ixid=MXwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=634&q=80"
-                  }
-                  objectFit="cover"
-                  alt="#"
-                />
-                <Flex justify={"center"} mt={-12} pos={"relative"}>
-                  <Avatar
-                    size={"xl"}
-                    name={`${admin?.f_name} ${admin?.l_name}`}
-                    src={`${imageBaseURL}/${admin.image}`}
-                    fallbackSrc={"/vite.svg"}
-                  />
-
-                  <FileUploadButton />
-                </Flex>
-
-                <Box p={6}>
-                  <Stack spacing={0} align={"center"} mb={5}>
-                    <Heading
-                      fontSize={"lg"}
-                      fontWeight={500}
-                      fontFamily={"body"}
-                    >
-                      {admin?.f_name} {admin?.l_name}
-                    </Heading>
-                    <Text color={"gray.500"} fontSize={"xs"}>
-                      Member Since{" "}
-                      {moment(admin?.created_at).format("MMM DD YYYY")}
-                    </Text>
-                  </Stack>
-
-                  <VStack direction={"row"} justify={"center"} spacing={6}>
-                    <Flex gap={4}>
-                      {" "}
-                      <FormControl id="name">
-                        <FormLabel>First Name</FormLabel>
-                        <InputGroup borderColor="#E0E1E7">
-                          <InputLeftElement pointerEvents="none">
-                            <BsPersonAdd color="gray.800" />
-                          </InputLeftElement>
-                          <Input
-                            type="text"
-                            size="md"
-                            defaultValue={admin?.f_name}
-                            {...register("f_name", { required: true })}
-                          />
-                        </InputGroup>
-                      </FormControl>{" "}
-                      <FormControl id="name">
-                        <FormLabel>Name</FormLabel>
-                        <InputGroup borderColor="#E0E1E7">
-                          <InputLeftElement pointerEvents="none">
-                            <BsPersonAdd color="gray.800" />
-                          </InputLeftElement>
-                          <Input
-                            type="text"
-                            size="md"
-                            defaultValue={admin?.l_name}
-                            {...register("l_name", { required: true })}
-                          />
-                        </InputGroup>
-                      </FormControl>
-                    </Flex>
-
-                    <FormControl id="email">
-                      <FormLabel>Email</FormLabel>
-                      <InputGroup borderColor="#E0E1E7">
-                        <InputLeftElement pointerEvents="none">
-                          <BsEnvelopeAt color="gray.800" />
-                        </InputLeftElement>
-                        <Input
-                          type="email"
-                          size="md"
-                          defaultValue={admin?.email}
-                          {...register("email", {
-                            required: false,
-                            pattern:
-                              "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+.[a-zA-Z]{2,}$",
-                          })}
-                        />
-                      </InputGroup>
-                    </FormControl>
-                    <FormControl id="Phone">
-                      <FormLabel>Phone</FormLabel>
-                      <InputGroup borderColor="#E0E1E7">
-                        <InputLeftElement pointerEvents="none">
-                          <BsPhone color="gray.800" />
-                        </InputLeftElement>
-                        <Input
-                          isDisabled
-                          type="tel"
-                          size="md"
-                          value={admin?.phone}
-                        />
-                      </InputGroup>
-                    </FormControl>
-                  </VStack>
-
-                  <Button
-                    size={"sm"}
-                    w={"full"}
-                    mt={8}
-                    colorScheme={"blue"}
-                    color={"white"}
-                    rounded={"md"}
-                    _hover={{
-                      transform: "translateY(-2px)",
-                      boxShadow: "lg",
-                    }}
-                    type="submit"
-                    isLoading={mutation.isPending}
-                  >
-                    Update
-                  </Button>
-                  <Button
-                    mt={2}
-                    size={"sm"}
-                    w={"full"}
-                    bg={useColorModeValue("gray.600", "gray.600")}
-                    color={"white"}
-                    rounded={"md"}
-                    _hover={{
-                      transform: "translateY(-2px)",
-                      boxShadow: "lg",
-                    }}
-                    onClick={closeModal}
-                  >
-                    Close
-                  </Button>
-                </Box>
-              </Box>
-            </Center>
-          </ModalBody>
-        </ModalContent>
-      </Modal>
 
       <UpdateAdminPassword isOpen={isOpen} onClose={onClose} />
     </Flex>
   );
 }
 
-const FileUploadButton = () => {
-  const inputRef = useRef(null);
+const ClinicSelctor = () => {
+  const [search, setSearch] = useState("");
+  const { clinicsData, clinicsError, clinicsLoading } = UseClinicsData();
+  const { selectedClinic, setSelectedClinic } = useSelectedClinic();
 
-  const handleButtonClick = () => {
-    inputRef.current.click(); // Programmatically click the hidden file input
-  };
+  const filteredClinics = clinicsData?.filter((clinic) => {
+    if (!search) return true;
 
-  const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      return;
+    const query = search.toLowerCase();
+    const searchableFields = [
+      clinic.title,
+      clinic.address,
+      clinic.city_title,
+      clinic.state_title,
+      clinic.description,
+    ];
+
+    return searchableFields.some(
+      (field) => field && field.toLowerCase().includes(query)
+    );
+  });
+  useEffect(() => {
+    if (admin) {
+      if (admin.role.name.toLowerCase() === "clinic") {
+        const clinic = clinicsData?.find(
+          (clinic) => clinic.id === admin.clinic_id
+        );
+        setSelectedClinic(clinic);
+      } else if (admin.clinic_id) {
+        const clinic = clinicsData?.find(
+          (clinic) => clinic.id === admin.clinic_id
+        );
+        setSelectedClinic(clinic);
+      } else if (admin.assign_clinic_id) {
+        const clinic = clinicsData?.find(
+          (clinic) => clinic.id === admin.assign_clinic_id
+        );
+        setSelectedClinic(clinic);
+      }
     }
-  };
+  }, [clinicsData]);
 
   return (
-    <>
-      <IconButton
-        icon={<BiCamera fontSize={16} />}
-        colorScheme="blue"
-        onClick={handleButtonClick}
-        size={"sm"}
-      ></IconButton>
-      <Input
-        type="file"
-        ref={inputRef}
-        display="none"
-        onChange={handleFileChange}
-      />
-    </>
+    <VStack spacing={4} align="start">
+      <Menu>
+        <Flex align={"center"} gap={2}>
+          <Text fontWeight={600}>Clinic - </Text>
+          <MenuButton
+            as={Button}
+            leftIcon={<FaHospitalUser />}
+            size={"sm"}
+            bg={"none"}
+            border={"1px solid"}
+            borderColor={"gray.300"}
+            _hover={{
+              bg: "none",
+            }}
+            _active={{
+              bg: "none",
+            }}
+            isDisabled={
+              clinicsError ||
+              clinicsLoading ||
+              (admin.role.name.toLowerCase() !== "admin" &&
+                admin.role.name.toLowerCase() !== "super admin")
+            }
+            _disabled={{
+              cursor: "not-allowed",
+            }}
+          >
+            {clinicsLoading ? (
+              <Flex>
+                Loading
+                <motion.span
+                  animate={{ opacity: [0, 1, 0] }}
+                  transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
+                >
+                  .
+                </motion.span>
+                <motion.span
+                  animate={{ opacity: [0, 1, 0] }}
+                  transition={{ duration: 1, repeat: Infinity, delay: 0.4 }}
+                >
+                  .
+                </motion.span>
+                <motion.span
+                  animate={{ opacity: [0, 1, 0] }}
+                  transition={{ duration: 1, repeat: Infinity, delay: 0.6 }}
+                >
+                  .
+                </motion.span>
+              </Flex>
+            ) : selectedClinic ? (
+              selectedClinic.title
+            ) : (
+              "All"
+            )}
+          </MenuButton>
+        </Flex>
+        <MenuList
+          maxW={"500px"}
+          minW={"300px"}
+          zIndex={100}
+          maxH={"70vh"}
+          overflow={"auto"}
+        >
+          <Box p={2}>
+            <Input
+              placeholder="Search clinics..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              size="md"
+            />
+          </Box>
+          <MenuItem
+            onClick={() => {
+              setSelectedClinic();
+              setSearch("");
+            }}
+            bg={
+              !selectedClinic
+                ? useColorModeValue("gray.100", "gray.600")
+                : "initial"
+            }
+            _hover={{
+              bg: useColorModeValue("gray.100", "gray.600"),
+            }}
+          >
+            All
+          </MenuItem>
+          {filteredClinics?.length > 0 ? (
+            filteredClinics?.map((clinic) => (
+              <MenuItem
+                key={clinic?.id}
+                onClick={() => {
+                  setSelectedClinic(clinic);
+                  setSearch("");
+                }}
+                bg={
+                  selectedClinic?.id === clinic?.id
+                    ? useColorModeValue("gray.100", "gray.600")
+                    : "initial"
+                }
+                _hover={{
+                  bg: useColorModeValue("gray.100", "gray.600"),
+                }}
+                fontSize={"md"}
+              >
+                {clinic.title} - {clinic.city_title}, {clinic.state_title} - #
+                {clinic.id}
+              </MenuItem>
+            ))
+          ) : (
+            <Box p={2} textAlign="center" color="gray.500">
+              No results found
+            </Box>
+          )}
+        </MenuList>
+      </Menu>
+    </VStack>
   );
 };

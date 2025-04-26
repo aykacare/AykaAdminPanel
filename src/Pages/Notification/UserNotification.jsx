@@ -20,7 +20,6 @@ import useHasPermission from "../../Hooks/HasPermission";
 import NotAuth from "../../Components/NotAuth";
 import { useEffect, useRef, useState } from "react";
 import moment from "moment";
-import { daysBack } from "../../Controllers/dateConfig";
 import useDebounce from "../../Hooks/UseDebounce";
 import Pagination from "../../Components/Pagination";
 import DateRangeCalender from "../../Components/DateRangeCalender";
@@ -30,8 +29,6 @@ const getPageIndices = (currentPage, itemsPerPage) => {
   let endIndex = startIndex + itemsPerPage - 1;
   return { startIndex, endIndex };
 };
-const sevenDaysBack = moment().subtract(daysBack, "days").format("YYYY-MM-DD");
-const today = moment().format("YYYY-MM-DD");
 
 export default function UserNotification({ currentTab, activeTab }) {
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -43,14 +40,16 @@ export default function UserNotification({ currentTab, activeTab }) {
   const [searchQuery, setsearchQuery] = useState("");
   const debouncedSearchQuery = useDebounce(searchQuery, 1000); // Track status filters
   const { startIndex, endIndex } = getPageIndices(page, 50);
-  const [dateRange, setdateRange] = useState({
-    startDate: sevenDaysBack,
-    endDate: today,
+  const [dateRange, setDateRange] = useState({
+    startDate: null,
+    endDate: null,
   });
-
-  const start_date = moment(dateRange.startDate).format("YYYY-MM-DD");
-  const end_date = moment(dateRange.endDate).format("YYYY-MM-DD");
-
+  const start_date = dateRange.startDate
+    ? moment(dateRange.startDate).format("YYYY-MM-DD")
+    : "";
+  const end_date = dateRange.endDate
+    ? moment(dateRange.endDate).format("YYYY-MM-DD")
+    : "";
   const getData = async () => {
     const res = await GET(
       admin.token,
@@ -183,7 +182,7 @@ export default function UserNotification({ currentTab, activeTab }) {
               />
               <DateRangeCalender
                 dateRange={dateRange}
-                setDateRange={setdateRange}
+                setDateRange={setDateRange}
                 size={"md"}
               />
             </Flex>

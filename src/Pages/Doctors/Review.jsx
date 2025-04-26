@@ -10,8 +10,10 @@ import RatingStars from "../../Hooks/ShowRating";
 // eslint-disable-next-line react/prop-types
 function Review({ doctID, doctorDetails }) {
   const getData = async () => {
-    const res = await GET(admin.token, `get_doctor_review/doctor/${doctID}`);
-    console.log(res.data);
+    const res = await GET(
+      admin.token,
+      `get_all_doctor_review?doctor_id=${doctID}`
+    );
     const rearrangedArray = res?.data.map((doctor) => {
       const {
         id,

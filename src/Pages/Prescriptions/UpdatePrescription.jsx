@@ -20,6 +20,10 @@ import {
   IconButton,
   useToast,
   useDisclosure,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
 } from "@chakra-ui/react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { GET, UPDATE } from "../../Controllers/ApiControllers";
@@ -33,6 +37,7 @@ import { useForm } from "react-hook-form";
 import showToast from "../../Controllers/ShowToast";
 import AddMedicine from "../Medicines/AddMedicine";
 import api from "../../Controllers/api";
+import imageBaseURL from "../../Controllers/image";
 function hasEmptyValue(arr) {
   return arr.some((item) =>
     Object.entries(item).some(
@@ -169,6 +174,31 @@ function UpdatePrescription() {
   };
 
   if (isLoading || mutation.isPending) return <Loading />;
+
+  if (prescriptionData?.pdf_file)
+    return (
+      <Box p={5}>
+        <Alert status="warning" borderRadius="md">
+          <AlertIcon />
+          <Box flex="1">
+            <AlertTitle>Handwritten Prescription</AlertTitle>
+            <AlertDescription>
+              This prescription contains a handwritten PDF that cannot be edited
+              on the web. Please open it on your tablet for editing.
+            </AlertDescription>
+          </Box>
+          <Button
+            as="a"
+            href={imageBaseURL + "/" + prescriptionData?.pdf_file}
+            target="_blank"
+            colorScheme="blue"
+            ml={4}
+          >
+            Open PDF
+          </Button>
+        </Alert>
+      </Box>
+    );
 
   return (
     <Box>

@@ -14,7 +14,6 @@ import admin from "../../Controllers/admin";
 import DynamicTable from "../../Components/DataTable";
 import { useNavigate } from "react-router-dom";
 
-import { daysBack } from "../../Controllers/dateConfig";
 import moment from "moment";
 import useHasPermission from "../../Hooks/HasPermission";
 import { useEffect, useRef, useState } from "react";
@@ -22,15 +21,13 @@ import useDebounce from "../../Hooks/UseDebounce";
 import NotAuth from "../../Components/NotAuth";
 import DateRangeCalender from "../../Components/DateRangeCalender";
 import Pagination from "../../Components/Pagination";
+import { useSelectedClinic } from "../../Context/SelectedClinic";
 
 const getPageIndices = (currentPage, itemsPerPage) => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   let endIndex = startIndex + itemsPerPage - 1;
   return { startIndex, endIndex };
 };
-
-const sevenDaysBack = moment().subtract(daysBack, "days").format("YYYY-MM-DD");
-const today = moment().format("YYYY-MM-DD");
 
 export default function UserNotification({ currentTab, activeTab }) {
   const navigate = useNavigate();
@@ -42,16 +39,22 @@ export default function UserNotification({ currentTab, activeTab }) {
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearchQuery = useDebounce(searchQuery, 1000);
   const [dateRange, setDateRange] = useState({
-    startDate: sevenDaysBack,
-    endDate: today,
+    startDate: null,
+    endDate: null,
   });
-
-  const start_date = moment(dateRange.startDate).format("YYYY-MM-DD");
-  const end_date = moment(dateRange.endDate).format("YYYY-MM-DD");
+  const start_date = dateRange.startDate
+    ? moment(dateRange.startDate).format("YYYY-MM-DD")
+    : "";
+  const end_date = dateRange.endDate
+    ? moment(dateRange.endDate).format("YYYY-MM-DD")
+    : "";
+  const { selectedClinic } = useSelectedClinic();
 
   const getData = async () => {
     const { startIndex, endIndex } = getPageIndices(page, 50);
-    const url = `get_user_notification_page?start=${startIndex}&end=${endIndex}&start_date=${start_date}&end_date=${end_date}&search=${debouncedSearchQuery}`;
+    const url = `get_admin_notification?start=${startIndex}&end=${endIndex}&start_date=${start_date}&end_date=${end_date}&search=${debouncedSearchQuery}&clinic_id=${
+      selectedClinic?.id || ""
+    }`;
     const res = await GET(admin.token, url);
 
     const newData = res.data.map((item) => {
@@ -113,7 +116,7 @@ export default function UserNotification({ currentTab, activeTab }) {
   };
 
   const { isLoading, data, error } = useQuery({
-    queryKey: ["notification-user"],
+    queryKey: ["notification-admin", page, debouncedSearchQuery, dateRange , selectedClinic],
     queryFn: getData,
     enabled: currentTab == activeTab,
   });

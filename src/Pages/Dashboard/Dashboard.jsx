@@ -38,6 +38,7 @@ import {
 } from "./AppointmentCards";
 import AppointmentsCalendar from "./Calender";
 import AddCheckin from "../Checkin/Add";
+import { useSelectedClinic } from "../../Context/SelectedClinic";
 
 const getData = async () => {
   const res = await GET(admin.token, "get_dashboard_count");
@@ -60,11 +61,26 @@ export default function DashboardMain() {
   const { transactionsData } = useTransactionData();
   const { patientsData } = usePatientData();
   const { hasPermission } = useHasPermission();
-
+  const { selectedClinic } = useSelectedClinic();
+  const getDataByClinic = async () => {
+    const res = await GET(
+      admin.token,
+      `get_dashboard_count/clinic/${selectedClinic.id}`
+    );
+    if (res.response !== 200) {
+      throw new Error(res.message);
+    }
+    return res.data;
+  };
   //
   const { data, isLoading } = useQuery({
-    queryKey: ["dashboard"],
-    queryFn: admin.role.name === "Doctor" ? getDataByDoct : getData,
+    queryKey: ["dashboard", selectedClinic],
+    queryFn:
+      admin.role.name === "Doctor"
+        ? getDataByDoct
+        : selectedClinic
+        ? getDataByClinic
+        : getData,
   });
 
   // filter fn
@@ -193,41 +209,13 @@ export default function DashboardMain() {
         </Box>
       )}
       {/* appointment in last 15 days */}
-      {admin.role.name === "Admin" ? (
-        <Box mt={5}>
-          <AppointmentReg Appointments={appointmentsData} />
-        </Box>
-      ) : hasPermission("APPOINTMENT_VIEW") ? (
+      {hasPermission("APPOINTMENT_VIEW") ? (
         <Box mt={5}>
           <AppointmentReg Appointments={appointmentsData} />
         </Box>
       ) : null}{" "}
       {/* charts */}
-      {admin.role.name === "Admin" ? (
-        <Flex gap={5} mt={5}>
-          <Box
-            maxW={"68%"}
-            flex={2}
-            bg={useColorModeValue("#fff", "gray.900")}
-            borderRadius={8}
-          >
-            <AppointmentChart
-              appointments={appointmentsData}
-              cancelledAppointments={CancelledAppointments}
-              compleatedAppointments={completedAppointment}
-              confirmedAppointments={confirmAppointments}
-            />
-          </Box>
-          <Box
-            maxW={"30%"}
-            flex={1}
-            bg={useColorModeValue("#fff", "gray.900")}
-            borderRadius={8}
-          >
-            <StatusPieChart appointments={appointmentsData} />
-          </Box>
-        </Flex>
-      ) : hasPermission("APPOINTMENT_VIEW") ? (
+      {hasPermission("APPOINTMENT_VIEW") ? (
         <Flex gap={5} mt={5}>
           <Box
             maxW={"68%"}
@@ -252,29 +240,7 @@ export default function DashboardMain() {
           </Box>
         </Flex>
       ) : null}{" "}
-      {admin.role.name === "Admin" ? (
-        <Flex gap={5} mt={5}>
-          <Box
-            maxW={"68%"}
-            flex={2}
-            bg={useColorModeValue("#fff", "gray.900")}
-            borderRadius={8}
-          >
-            <TransactionChart
-              creditTransactions={creditTxn}
-              debitTransactions={debitTxn}
-            />
-          </Box>
-          <Box
-            maxW={"30%"}
-            flex={1}
-            bg={useColorModeValue("#fff", "gray.900")}
-            borderRadius={8}
-          >
-            <TransactionPieChart transactions={transactionsData} />
-          </Box>
-        </Flex>
-      ) : hasPermission("ALL_TRANSACTION_VIEW") ? (
+      {hasPermission("ALL_TRANSACTION_VIEW") ? (
         <Flex gap={5} mt={5}>
           <Box
             maxW={"68%"}
@@ -336,10 +302,9 @@ const Buttons = () => {
   } = useDisclosure();
   return (
     <>
-      {admin.role.name === "Admin" ? (
-        <Flex gap={5} justify={"space-between"}>
-          <Flex gap={5} justify={"start"}>
-            {" "}
+      <Flex gap={5} justify={"space-between"}>
+        <Flex gap={5} justify={"start"}>
+          {hasPermission("APPOINTMENT_ADD") && (
             <Button
               size={"xs"}
               colorScheme={"blue"}
@@ -356,6 +321,8 @@ const Buttons = () => {
             >
               Add New Appointment
             </Button>
+          )}
+          {hasPermission("DOCTOR_ADD") && (
             <Button
               size={"xs"}
               colorScheme={"blue"}
@@ -372,6 +339,8 @@ const Buttons = () => {
             >
               Add Doctor
             </Button>
+          )}
+          {hasPermission("PATIENT_ADD") && (
             <Button
               size={"xs"}
               colorScheme={"blue"}
@@ -388,6 +357,8 @@ const Buttons = () => {
             >
               Add Patient
             </Button>
+          )}
+          {hasPermission("MEDICINE_ADD") && (
             <Button
               size={"xs"}
               colorScheme={"blue"}
@@ -404,6 +375,8 @@ const Buttons = () => {
             >
               Add Medicine
             </Button>
+          )}
+          {hasPermission("CHECKIN_ADD") && (
             <Button
               size={"xs"}
               colorScheme={"blue"}
@@ -420,106 +393,10 @@ const Buttons = () => {
             >
               New checkin
             </Button>
-          </Flex>
-          <ClockWithCountdown />
+          )}
         </Flex>
-      ) : (
-        <Flex gap={5} justify={"space-between"}>
-          <Flex gap={5} justify={"start"}>
-            {hasPermission("APPOINTMENT_ADD") && (
-              <Button
-                size={"xs"}
-                colorScheme={"blue"}
-                bg={"blue.700"}
-                _hover={{
-                  bg: "blue.700",
-                }}
-                color={"#fff"}
-                leftIcon={<MdAddCircleOutline fontSize={18} />}
-                onClick={() => {
-                  appointmentonOpen();
-                }}
-                borderRadius={0}
-              >
-                Add New Appointment
-              </Button>
-            )}
-            {hasPermission("DOCTOR_ADD") && (
-              <Button
-                size={"xs"}
-                colorScheme={"blue"}
-                bg={"blue.700"}
-                _hover={{
-                  bg: "blue.700",
-                }}
-                color={"#fff"}
-                leftIcon={<MdAddCircleOutline fontSize={18} />}
-                onClick={() => {
-                  navigate("/doctors/add");
-                }}
-                borderRadius={0}
-              >
-                Add Doctor
-              </Button>
-            )}
-            {hasPermission("PATIENT_ADD") && (
-              <Button
-                size={"xs"}
-                colorScheme={"blue"}
-                bg={"blue.700"}
-                _hover={{
-                  bg: "blue.700",
-                }}
-                color={"#fff"}
-                leftIcon={<MdAddCircleOutline fontSize={18} />}
-                onClick={() => {
-                  patientonOpen();
-                }}
-                borderRadius={0}
-              >
-                Add Patient
-              </Button>
-            )}
-            {hasPermission("MEDICINE_ADD") && (
-              <Button
-                size={"xs"}
-                colorScheme={"blue"}
-                bg={"blue.700"}
-                _hover={{
-                  bg: "blue.700",
-                }}
-                color={"#fff"}
-                leftIcon={<MdAddCircleOutline fontSize={18} />}
-                onClick={() => {
-                  onOpen();
-                }}
-                borderRadius={0}
-              >
-                Add Medicine
-              </Button>
-            )}
-            {hasPermission("CHECKIN_ADD") && (
-              <Button
-                size={"xs"}
-                colorScheme={"blue"}
-                bg={"blue.700"}
-                _hover={{
-                  bg: "blue.700",
-                }}
-                color={"#fff"}
-                leftIcon={<BiCheckShield fontSize={18} />}
-                onClick={() => {
-                  onOpen();
-                }}
-                borderRadius={0}
-              >
-                Add Medicine
-              </Button>
-            )}
-          </Flex>
-          <ClockWithCountdown />
-        </Flex>
-      )}{" "}
+        <ClockWithCountdown />
+      </Flex>
       <AddMedicine isOpen={isOpen} onClose={onClose} />
       <AddNewAppointment
         isOpen={appointmentisOpen}
