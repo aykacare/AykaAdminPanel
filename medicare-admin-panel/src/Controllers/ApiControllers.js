@@ -1,110 +1,173 @@
-﻿import t from "axios";
-import a from "./token";
-import e from "./api";
-let handleSessionExpiration = (t) => {
+﻿import axios from "axios";
+import { getToken } from "./token";
+import { API_BASE_URL } from "./api";
+
+// Session management utilities
+const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+let inactivityTimer;
+
+// Initialize session timeout tracking
+const initSessionTimeout = () => {
+  resetInactivityTimer();
+  window.addEventListener("mousemove", resetInactivityTimer);
+  window.addEventListener("keypress", resetInactivityTimer);
+};
+
+// const resetInactivityTimer = () => {
+//   clearTimeout(inactivityTimer);
+//   inactivityTimer = setTimeout(logoutUser, SESSION_TIMEOUT);
+// };
+
+const logoutUser = () => {
+  localStorage.removeItem("admin");
+  localStorage.removeItem("refreshToken");
+  window.location.href = "/login";
+};
+
+// Initialize when this module loads
+// initSessionTimeout();
+
+// Create axios instance with interceptors
+const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  maxBodyLength: Infinity,
+});
+
+// Request interceptor
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = getToken();
+    if (token) {
+      config.headers.Authorization = token;
+    }
+    resetInactivityTimer(); // Reset timeout on any API request
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response interceptor
+apiClient.interceptors.response.use(
+  (response) => {
+    resetInactivityTimer(); // Reset timeout on successful response
+    return response;
+  },
+  async (error) => {
+    const originalRequest = error.config;
+    
+    // Check for token refresh scenario
     if (
-      t.response &&
-      t.response.data &&
-      401 === t.response.data.response &&
-      !1 === t.response.data.status &&
-      "Session expired. Please log in again." === t.response.data.message
-    )
-      return (
-        console.error(t.response.data.message),
-        setTimeout(() => {
-          localStorage.removeItem("admin"), window.location.reload();
-        }, 2e3),
-        { sessionExpired: !0, message: "Session expired. Please log-in again." }
-      );
-    throw t;
-  },
-  GET = async (o, n) => {
-    var i = {
-      method: "get",
-      maxBodyLength: 1 / 0,
-      url: `${e}/${n}`,
-      headers: { Authorization: a(o) },
-    };
-    try {
-      let s = await t(i);
-      return s.data;
-    } catch (d) {
-      console.log(d)
+      error.response?.status === 401 && 
+      !originalRequest._retry &&
+      localStorage.getItem("refreshToken")
+    ) {
+      originalRequest._retry = true;
+      
+      try {
+        const refreshResponse = await axios.post(`${API_BASE_URL}/refresh-token`, {
+          refreshToken: localStorage.getItem("refreshToken")
+        });
+        
+        localStorage.setItem("admin", refreshResponse.data.token);
+        localStorage.setItem("refreshToken", refreshResponse.data.refreshToken);
+        
+        originalRequest.headers.Authorization = getToken();
+        return apiClient(originalRequest);
+      } catch (refreshError) {
+        // Refresh failed - proceed to logout
+      }
     }
-  },
-  ADD = async (r, o, n) => {
-    var i = {
-      method: "post",
-      maxBodyLength: 1 / 0,
-      url: `${e}/${o}`,
-      headers: { Authorization: a(r), "Content-Type": "multipart/form-data" },
-      data: n,
-    };
-    try {
-      let s = await t(i);
-      return s.data;
-    } catch (d) {
-      return handleSessionExpiration(d);
-    }
-  },
-  ADDMulti = async (e, r, o) => {
-    var n = {
-      method: "post",
-      maxBodyLength: 1 / 0,
-      url: r,
-      headers: { Authorization: a(e), "Content-Type": "multipart/form-data" },
-      data: o,
-    };
-    try {
-      let i = await t(n);
-      return i.data;
-    } catch (s) {
-      return handleSessionExpiration(s);
-    }
-  },
-  UPDATE = async (r, o, n) => {
-    var i = {
-      method: "post",
-      maxBodyLength: 1 / 0,
-      url: `${e}/${o}`,
-      headers: { Authorization: a(r), "Content-Type": "multipart/form-data" },
-      data: n,
-    };
-    try {
-      let s = await t(i);
-      return s.data;
-    } catch (d) {
-      return handleSessionExpiration(d);
-    }
-  },
-  DELETE = async (r, o, n) => {
-    var i = {
-      method: "post",
-      maxBodyLength: 1 / 0,
-      url: `${e}/${o}`,
-      headers: { Authorization: a(r), "Content-Type": "application/json" },
-      data: n,
-    };
-    try {
-      let s = await t(i);
-      return s.data;
-    } catch (d) {
-      return handleSessionExpiration(d);
-    }
-  },
-  UPLOAD = async (e, r, o) => {
-    var n = {
-      method: "post",
-      maxBodyLength: 1 / 0,
-      url: r,
-      headers: { Authorization: a(e), "Content-Type": "multipart/form-data" },
-      data: o,
-    };
-    try {
-      let i = await t(n);
-      return i.data;
-    } catch (s) {
-      return handleSessionExpiration(s);
-    }
-  };
-export { GET, ADD, DELETE, UPDATE, UPLOAD, ADDMulti };
+    
+    // // Handle session expiration
+    // if (
+    //   error.response &&
+    //   error.response.status === 401 &&
+    //   error.response.data?.message === "Session expired. Please log in again."
+    // ) {
+    //   console.error("Session expired");
+    //   logoutUser();
+    //   return Promise.reject({
+    //     sessionExpired: true,
+    //     message: "Session expired. Please log-in again.",
+    //   });
+    // }
+    
+    return Promise.reject(error);
+  }
+);
+
+// API methods
+const GET = async (endpoint, params = {}) => {
+  try {
+    const response = await apiClient.get(endpoint, { params });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const ADD = async (endpoint, data) => {
+  try {
+    const response = await apiClient.post(endpoint, data, {
+      headers: { "Content-Type": "multipart/form-data" }
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const ADDMulti = async (url, data) => {
+  try {
+    const response = await apiClient.post(url, data, {
+      headers: { "Content-Type": "multipart/form-data" }
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const UPDATE = async (endpoint, data) => {
+  try {
+    const response = await apiClient.post(endpoint, data, {
+      headers: { "Content-Type": "multipart/form-data" }
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const DELETE = async (endpoint, data) => {
+  try {
+    const response = await apiClient.post(endpoint, data, {
+      headers: { "Content-Type": "application/json" }
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const UPLOAD = async (url, data) => {
+  try {
+    const response = await apiClient.post(url, data, {
+      headers: { "Content-Type": "multipart/form-data" }
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export { 
+  GET, 
+  ADD, 
+  DELETE, 
+  UPDATE, 
+  UPLOAD, 
+  ADDMulti,
+  logoutUser, // Export logout for manual triggers
+  resetInactivityTimer // Export for explicit resets
+};

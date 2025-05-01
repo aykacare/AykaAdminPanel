@@ -227,6 +227,7 @@ export default function AddDoctor() {
                 >
                   <option value="Female">Female</option>{" "}
                   <option value="Male">Male</option>
+                  <option value="Male">Other</option>
                 </Select>
               </FormControl>
 
