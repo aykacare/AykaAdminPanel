@@ -873,84 +873,106 @@ const FeesForm = ({ doctorDetails, register, setValue }) => {
       h="fit-content"
       pb={5}
     >
-      <CardBody p={2}>
-        <Heading as="h3" size="sm">
-          Fees
-        </Heading>
-        <Divider mt={2} mb={2} />
+     <CardBody p={2}>
+  <Heading as="h3" size="sm">
+    Fees
+  </Heading>
+  <Divider mt={2} mb={2} />
 
-        {/* Toggle Switches */}
-        <FormControl display="flex" alignItems="center" mb={2}>
-          <FormLabel mb="0">OPD Appointment - </FormLabel>
-          <Switch
-            isChecked={appointments.clinic_appointment === 1}
-            onChange={() => handleToggle("clinic_appointment")}
-            size={"sm"}
-          />
-        </FormControl>
-        {appointments.clinic_appointment === 1 && (
-          <FormControl>
-            <FormLabel>OPD Fee</FormLabel>
-            <Input
-              size="sm"
-              borderRadius={6}
-              type="number"
-              placeholder="OPD Fee"
-              {...register("opd_fee")}
-              defaultValue={doctorDetails?.opd_fee}
-            />
-          </FormControl>
-        )}
+  {/* OPD Appointment Section */}
+  <FormControl display="flex" alignItems="center" mb={2}>
+    <FormLabel mb="0">OPD Appointment - </FormLabel>
+    <Switch
+      isChecked={appointments.clinic_appointment === 1}
+      onChange={() => handleToggle("clinic_appointment")}
+      size={"sm"}
+    />
+  </FormControl>
+  {appointments.clinic_appointment === 1 && (
+    <FormControl>
+      <FormLabel>OPD Fee</FormLabel>
+      <Input
+        size="sm"
+        borderRadius={6}
+        type="number"
+        placeholder="OPD Fee"
+        {...register("opd_fee")}
+        defaultValue={doctorDetails?.opd_fee}
+        onChange={(e) => {
+          const value = parseFloat(e.target.value) || 0;
+          setValue("opd_fee", value);
+        }}
+      />
+      <Text fontSize="xs" color="gray.500" mt={1}>
+        You'll earn: {watch("opd_fee") ? (watch("opd_fee") * 0.8).toFixed(2) : "0.00"}
+      </Text>
+    </FormControl>
+  )}
 
-        <Divider my={3} />
+  <Divider my={3} />
 
-        <FormControl display="flex" alignItems="center" mb={2}>
-          <FormLabel mb="0">Video Appointment - </FormLabel>
-          <Switch
-            isChecked={appointments.video_appointment === 1}
-            onChange={() => handleToggle("video_appointment")}
-            size={"sm"}
-          />
-        </FormControl>
-        {appointments.video_appointment === 1 && (
-          <FormControl mt={3}>
-            <FormLabel>Video Fee</FormLabel>
-            <Input
-              size="sm"
-              borderRadius={6}
-              type="number"
-              placeholder="Video Fee"
-              {...register("video_fee")}
-              defaultValue={doctorDetails?.video_fee}
-            />
-          </FormControl>
-        )}
+  {/* Video Appointment Section */}
+  <FormControl display="flex" alignItems="center" mb={2}>
+    <FormLabel mb="0">Video Appointment - </FormLabel>
+    <Switch
+      isChecked={appointments.video_appointment === 1}
+      onChange={() => handleToggle("video_appointment")}
+      size={"sm"}
+    />
+  </FormControl>
+  {appointments.video_appointment === 1 && (
+    <FormControl mt={3}>
+      <FormLabel>Video Fee</FormLabel>
+      <Input
+        size="sm"
+        borderRadius={6}
+        type="number"
+        placeholder="Video Fee"
+        {...register("video_fee")}
+        defaultValue={doctorDetails?.video_fee}
+        onChange={(e) => {
+          const value = parseFloat(e.target.value) || 0;
+          setValue("video_fee", value);
+        }}
+      />
+      <Text fontSize="xs" color="gray.500" mt={1}>
+        You'll earn: {watch("video_fee") ? (watch("video_fee") * 0.8).toFixed(2) : "0.00"}
+      </Text>
+    </FormControl>
+  )}
 
-        <Divider my={3} />
-        <FormControl display="flex" alignItems="center" mb={2}>
-          <FormLabel mb="0">Emergency Appointment - </FormLabel>
-          <Switch
-            isChecked={appointments.emergency_appointment === 1}
-            onChange={() => handleToggle("emergency_appointment")}
-            size={"sm"}
-          />
-        </FormControl>
-        {appointments.emergency_appointment === 1 && (
-          <FormControl mt={3}>
-            <FormLabel>Emergency Fee</FormLabel>
-            <Input
-              size="sm"
-              borderRadius={6}
-              type="number"
-              placeholder="Emergency Fee"
-              {...register("emg_fee")}
-              defaultValue={doctorDetails?.emg_fee}
-            />
-          </FormControl>
-        )}
+  <Divider my={3} />
 
-        {/* Input Fields (Shown Conditionally) */}
-      </CardBody>
+  {/* Emergency Appointment Section */}
+  <FormControl display="flex" alignItems="center" mb={2}>
+    <FormLabel mb="0">Emergency Appointment - </FormLabel>
+    <Switch
+      isChecked={appointments.emergency_appointment === 1}
+      onChange={() => handleToggle("emergency_appointment")}
+      size={"sm"}
+    />
+  </FormControl>
+  {appointments.emergency_appointment === 1 && (
+    <FormControl mt={3}>
+      <FormLabel>Emergency Fee</FormLabel>
+      <Input
+        size="sm"
+        borderRadius={6}
+        type="number"
+        placeholder="Emergency Fee"
+        {...register("emg_fee")}
+        defaultValue={doctorDetails?.emg_fee}
+        onChange={(e) => {
+          const value = parseFloat(e.target.value) || 0;
+          setValue("emg_fee", value);
+        }}
+      />
+      <Text fontSize="xs" color="gray.500" mt={1}>
+        You'll earn: {watch("emg_fee") ? (watch("emg_fee") * 0.8).toFixed(2) : "0.00"}
+      </Text>
+    </FormControl>
+  )}
+</CardBody>
     </Card>
   );
 };

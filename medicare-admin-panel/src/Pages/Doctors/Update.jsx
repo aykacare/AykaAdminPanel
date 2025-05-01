@@ -815,46 +815,72 @@ export default function UpdateDoctor() {
                   h={"fit-content"}
                   pb={5}
                 >
-                  <CardBody p={2}>
-                    <Heading as={"h3"} size={"sm"}>
-                      Fees
-                    </Heading>
-                    <Divider mt={2} mb={2} />
+              <CardBody p={2}>
+  <Heading as={"h3"} size={"sm"}>
+    Fees
+  </Heading>
+  <Divider mt={2} mb={2} />
 
-                    <FormControl>
-                      <FormLabel>OPD Fee</FormLabel>
-                      <Input
-                        size={"sm"}
-                        borderRadius={6}
-                        type="number"
-                        placeholder="OPD Fee"
-                        {...register("opd_fee")}
-                        defaultValue={doctorDetails?.opd_fee}
-                      />
-                    </FormControl>
-                    <FormControl mt={3}>
-                      <FormLabel>Video Fee</FormLabel>
-                      <Input
-                        size={"sm"}
-                        borderRadius={6}
-                        type="number"
-                        placeholder="Video Fee"
-                        {...register("video_fee")}
-                        defaultValue={doctorDetails?.video_fee}
-                      />
-                    </FormControl>
-                    <FormControl mt={3}>
-                      <FormLabel>Emergency Fee</FormLabel>
-                      <Input
-                        size={"sm"}
-                        borderRadius={6}
-                        type="number"
-                        placeholder="Emergency Fee"
-                        {...register("emg_fee")}
-                        defaultValue={doctorDetails?.emg_fee}
-                      />
-                    </FormControl>
-                  </CardBody>
+  <FormControl>
+    <FormLabel>OPD Fee</FormLabel>
+    <Input
+      size={"sm"}
+      borderRadius={6}
+      type="number"
+      placeholder="OPD Fee"
+      {...register("opd_fee")}
+      defaultValue={doctorDetails?.opd_fee}
+      onChange={(e) => {
+        const value = parseFloat(e.target.value) || 0;
+        setValue("opd_fee", value);
+        setValue("opd_earning", value * 0.8); // 80% of the fee (20% reduction)
+      }}
+    />
+    <Text fontSize="xs" color="gray.500" mt={1}>
+      You'll earn: {watch("opd_fee") ? (watch("opd_fee") * 0.8).toFixed(2) : "0.00"}
+    </Text>
+  </FormControl>
+
+  <FormControl mt={3}>
+    <FormLabel>Video Fee</FormLabel>
+    <Input
+      size={"sm"}
+      borderRadius={6}
+      type="number"
+      placeholder="Video Fee"
+      {...register("video_fee")}
+      defaultValue={doctorDetails?.video_fee}
+      onChange={(e) => {
+        const value = parseFloat(e.target.value) || 0;
+        setValue("video_fee", value);
+        setValue("video_earning", value * 0.8); // 80% of the fee (20% reduction)
+      }}
+    />
+    <Text fontSize="xs" color="gray.500" mt={1}>
+      You'll earn: {watch("video_fee") ? (watch("video_fee") * 0.8).toFixed(2) : "0.00"}
+    </Text>
+  </FormControl>
+
+  <FormControl mt={3}>
+    <FormLabel>Emergency Fee</FormLabel>
+    <Input
+      size={"sm"}
+      borderRadius={6}
+      type="number"
+      placeholder="Emergency Fee"
+      {...register("emg_fee")}
+      defaultValue={doctorDetails?.emg_fee}
+      onChange={(e) => {
+        const value = parseFloat(e.target.value) || 0;
+        setValue("emg_fee", value);
+        setValue("emg_earning", value * 0.8); // 80% of the fee (20% reduction)
+      }}
+    />
+    <Text fontSize="xs" color="gray.500" mt={1}>
+      You'll earn: {watch("emg_fee") ? (watch("emg_fee") * 0.8).toFixed(2) : "0.00"}
+    </Text>
+  </FormControl>
+</CardBody>
                 </Card>
               </Box>
             </Flex>

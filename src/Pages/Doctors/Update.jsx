@@ -84,7 +84,7 @@ export default function UpdateDoctor() {
 
   const navigate = useNavigate();
   const [isLoading, setisLoading] = useState();
-  const { register, handleSubmit, setValue } = useForm();
+  const { register, handleSubmit, setValue, watch } = useForm();
   const queryClient = useQueryClient();
   const toast = useToast();
   const [departmentID, setdepartmentID] = useState(doctorDetails?.department);
@@ -100,8 +100,6 @@ export default function UpdateDoctor() {
     setdepartmentID(doctorDetails?.department);
     setspecializationID(doctorDetails?.specialization);
   }, [doctorDetails]);
-
-  // get doctor details
 
   const AddNew = async (data) => {
     if (data.password && data.password != data.cnfPassword) {
@@ -126,7 +124,6 @@ export default function UpdateDoctor() {
       isd_code,
       ...data,
     };
-    console.log(data);
 
     try {
       setisLoading(true);
@@ -163,6 +160,7 @@ export default function UpdateDoctor() {
       ShowToast(toast, "error", JSON.stringify(error));
     }
   };
+
   const handleFileDelete = async () => {
     try {
       setisLoading(true);
@@ -220,7 +218,7 @@ export default function UpdateDoctor() {
 
       <Tabs mt={5}>
         <TabList>
-          <Tab>Doctor Details </Tab>
+          <Tab>Doctor Details</Tab>
           <Tab>Time Slotes</Tab>
           <Tab>Reviews</Tab>
           <Tab>Appointments</Tab>
@@ -229,33 +227,23 @@ export default function UpdateDoctor() {
         <TabPanels>
           <TabPanel p={0}>
             <Flex gap={10} mt={2} as={"form"} onSubmit={handleSubmit(AddNew)}>
+              {/* Left Section (75% width) */}
               <Box w={"75%"}>
+                {/* Basic Details Card */}
                 <Card mt={5} bg={useColorModeValue("white", "gray.700")}>
-                  <CardBody p={3} as={"form"}>
+                  <CardBody p={3}>
                     <Flex align={"center"} justify={"space-between"}>
-                      {" "}
-                      <Heading as={"h3"} size={"sm"}>
-                        Basic Details -
-                      </Heading>{" "}
-                      <Flex gap={2}>
-                        <Flex display={"flex"} align={"center"} gap={1}>
-                          {" "}
-                          <RatingStars
-                            rating={doctorDetails?.average_rating}
-                          />{" "}
-                          <Text fontSize={"sm"} fontWeight={600}>
-                            {" "}
-                            ( {doctorDetails?.number_of_reviews}) ,
-                          </Text>
-                        </Flex>
+                      <Heading as={"h3"} size={"sm"}>Basic Details</Heading>
+                      <Flex gap={2} align="center">
+                        <RatingStars rating={doctorDetails?.average_rating} />
                         <Text fontSize={"sm"} fontWeight={600}>
-                          {" "}
-                          {doctorDetails?.total_appointment_done} Appointments
-                          Done
+                          ({doctorDetails?.number_of_reviews} reviews),
+                        </Text>
+                        <Text fontSize={"sm"} fontWeight={600}>
+                          {doctorDetails?.total_appointment_done} Appointments Done
                         </Text>
                       </Flex>
                     </Flex>
-
                     <Divider mt={2} mb={5} />
 
                     <Flex gap={10} mt={5} align={"flex-end"}>
@@ -265,7 +253,7 @@ export default function UpdateDoctor() {
                           size={"sm"}
                           borderRadius={6}
                           placeholder="First Name"
-                          {...register("f_name", { required: true })}
+                          {...register("f_name")}
                           defaultValue={doctorDetails?.f_name}
                         />
                       </FormControl>
@@ -276,52 +264,23 @@ export default function UpdateDoctor() {
                           size={"sm"}
                           borderRadius={6}
                           placeholder="Last Name"
-                          {...register("l_name", { required: true })}
+                          {...register("l_name")}
                           defaultValue={doctorDetails?.l_name}
                         />
                       </FormControl>
+
                       <FormControl>
-                        <FormControl
-                          display="flex"
-                          alignItems="center"
-                          mb={2}
-                          gap={3}
-                        >
-                          <FormLabel
-                            htmlFor="email-alerts"
-                            mb="0"
-                            fontSize={"sm"}
-                          >
-                            Doctor Active ?
+                        <FormControl display="flex" alignItems="center" mb={2} gap={3}>
+                          <FormLabel htmlFor="email-alerts" mb="0" fontSize={"sm"}>
+                            Doctor Active?
                           </FormLabel>
-                          <Box>
-                            {" "}
-                            <IsActiveSwitch
-                              id={param.id}
-                              isActive={doctorDetails?.active}
-                            />
-                          </Box>
-                        </FormControl>{" "}
-                        <FormControl
-                          display="flex"
-                          alignItems="center"
-                          mb={2}
-                          gap={3}
-                        >
-                          <FormLabel
-                            htmlFor="email-alerts"
-                            mb="0"
-                            fontSize={"sm"}
-                          >
-                            Stop Booking ?
+                          <IsActiveSwitch id={param.id} isActive={doctorDetails?.active} />
+                        </FormControl>
+                        <FormControl display="flex" alignItems="center" mb={2} gap={3}>
+                          <FormLabel htmlFor="email-alerts" mb="0" fontSize={"sm"}>
+                            Stop Booking?
                           </FormLabel>
-                          <Box>
-                            {" "}
-                            <StopBooking
-                              id={param.id}
-                              isStop_booking={doctorDetails?.stop_booking}
-                            />
-                          </Box>
+                          <StopBooking id={param.id} isStop_booking={doctorDetails?.stop_booking} />
                         </FormControl>
                       </FormControl>
                     </Flex>
@@ -332,50 +291,41 @@ export default function UpdateDoctor() {
                         <Input
                           max={todayDate()}
                           size={"sm"}
-                          borderRadius={6}
-                          placeholder="Select Date"
                           type="date"
-                          {...register("dob", { required: true })}
+                          {...register("dob")}
                           defaultValue={doctorDetails?.dob}
                         />
                       </FormControl>
+                      
                       <FormControl isRequired>
                         <FormLabel>Gender</FormLabel>
                         <Select
                           size={"sm"}
-                          borderRadius={6}
-                          placeholder="Select Gender"
-                          {...register("gender", { required: true })}
+                          {...register("gender")}
                           defaultValue={doctorDetails?.gender}
                         >
-                          <option value="Female">Female</option>{" "}
+                          <option value="Female">Female</option>
                           <option value="Male">Male</option>
                         </Select>
                       </FormControl>
 
                       <FormControl isRequired>
-                        <FormLabel>Years OF Experience</FormLabel>
+                        <FormLabel>Years of Experience</FormLabel>
                         <Input
                           size={"sm"}
-                          borderRadius={6}
                           type="number"
-                          placeholder="Years OF Experience"
-                          {...register("ex_year", { required: true })}
+                          {...register("ex_year")}
                           defaultValue={doctorDetails?.ex_year}
                         />
                       </FormControl>
                     </Flex>
                   </CardBody>
                 </Card>
-                <Card mt={5} bg={useColorModeValue("white", "gray.700")}>
-                  <CardBody p={3} as={"form"}>
-                    <Flex align={"center"} justify={"space-between"}>
-                      {" "}
-                      <Heading as={"h3"} size={"sm"}>
-                        Contact Details -
-                      </Heading>{" "}
-                    </Flex>
 
+                {/* Contact Details Card */}
+                <Card mt={5} bg={useColorModeValue("white", "gray.700")}>
+                  <CardBody p={3}>
+                    <Heading as={"h3"} size={"sm"}>Contact Details</Heading>
                     <Divider mt={2} mb={5} />
 
                     <Flex gap={10} mt={5}>
@@ -383,16 +333,14 @@ export default function UpdateDoctor() {
                         <FormLabel>Email</FormLabel>
                         <Input
                           size={"sm"}
-                          borderRadius={6}
                           type="email"
-                          placeholder="Email"
-                          {...register("email", { required: true })}
+                          {...register("email")}
                           defaultValue={doctorDetails?.email}
                         />
                       </FormControl>
 
-                      <FormControl mt={0} isRequired>
-                        <FormLabel>Phone </FormLabel>
+                      <FormControl isRequired>
+                        <FormLabel>Phone</FormLabel>
                         <InputGroup size={"sm"}>
                           <InputLeftAddon
                             cursor={"pointer"}
@@ -406,15 +354,14 @@ export default function UpdateDoctor() {
                           </InputLeftAddon>
                           <Input
                             borderRadius={6}
-                            placeholder="Enter your phone number"
-                            type="Tel"
-                            fontSize={16}
-                            {...register("phone", { required: true })}
-                            defaultValue={doctorDetails.phone}
+                            type="tel"
+                            {...register("phone")}
+                            defaultValue={doctorDetails?.phone}
                           />
                         </InputGroup>
                       </FormControl>
-                      <FormControl mt={0}>
+
+                      <FormControl>
                         <FormLabel>Secondary Phone</FormLabel>
                         <InputGroup size={"sm"}>
                           <InputLeftAddon
@@ -429,26 +376,20 @@ export default function UpdateDoctor() {
                           </InputLeftAddon>
                           <Input
                             borderRadius={6}
-                            placeholder="Enter your phone number"
-                            type="Tel"
-                            fontSize={16}
+                            type="tel"
                             {...register("phone_sec")}
-                            defaultValue={doctorDetails.phone_sec}
+                            defaultValue={doctorDetails?.phone_sec}
                           />
                         </InputGroup>
                       </FormControl>
                     </Flex>
                   </CardBody>
                 </Card>
-                <Card mt={5} bg={useColorModeValue("white", "gray.700")}>
-                  <CardBody p={3} as={"form"}>
-                    <Flex align={"center"} justify={"space-between"}>
-                      {" "}
-                      <Heading as={"h3"} size={"sm"}>
-                        Education And Other Deta -
-                      </Heading>{" "}
-                    </Flex>
 
+                {/* Education and Other Details Card */}
+                <Card mt={5} bg={useColorModeValue("white", "gray.700")}>
+                  <CardBody p={3}>
+                    <Heading as={"h3"} size={"sm"}>Education and Other Details</Heading>
                     <Divider mt={2} mb={5} />
 
                     <Flex gap={10} mt={5}>
@@ -462,15 +403,13 @@ export default function UpdateDoctor() {
                         />
                       </FormControl>
 
-                      <FormControl isRequired size={"sm"}>
+                      <FormControl isRequired>
                         <FormLabel>Specialization</FormLabel>
                         <MultiTagInput
                           data={specializationList}
                           setState={setspecializationID}
                           name={"Specialization"}
-                          defaultSelected={doctorDetails?.specialization.split(
-                            ", "
-                          )}
+                          defaultSelected={doctorDetails?.specialization?.split(", ")}
                         />
                       </FormControl>
                     </Flex>
@@ -490,24 +429,19 @@ export default function UpdateDoctor() {
                     </Flex>
                   </CardBody>
                 </Card>
-                <Card mt={5} bg={useColorModeValue("white", "gray.700")}>
-                  <CardBody p={3} as={"form"}>
-                    <Flex align={"center"} justify={"space-between"}>
-                      {" "}
-                      <Heading as={"h3"} size={"sm"}>
-                        Address -{" "}
-                      </Heading>{" "}
-                    </Flex>
 
+                {/* Address Card */}
+                <Card mt={5} bg={useColorModeValue("white", "gray.700")}>
+                  <CardBody p={3}>
+                    <Heading as={"h3"} size={"sm"}>Address</Heading>
                     <Divider mt={2} mb={5} />
+
                     <Flex gap={10}>
                       <FormControl>
                         <FormLabel>State</FormLabel>
                         <Input
                           size={"sm"}
-                          borderRadius={6}
-                          type="email"
-                          placeholder="State"
+                          type="text"
                           {...register("state")}
                           defaultValue={doctorDetails?.state}
                         />
@@ -517,29 +451,26 @@ export default function UpdateDoctor() {
                         <FormLabel>City</FormLabel>
                         <Input
                           size={"sm"}
-                          borderRadius={6}
                           type="text"
-                          placeholder="City"
                           {...register("city")}
-                          defaultValue={doctorDetails.city}
+                          defaultValue={doctorDetails?.city}
                         />
                       </FormControl>
+
                       <FormControl>
                         <FormLabel>Postal Code</FormLabel>
                         <Input
                           size={"sm"}
-                          borderRadius={6}
                           type="number"
-                          placeholder="Postal Code"
                           {...register("postal_code")}
-                          defaultValue={doctorDetails.postal_code}
+                          defaultValue={doctorDetails?.postal_code}
                         />
                       </FormControl>
                     </Flex>
 
                     <Flex gap={10} mt={5}>
                       <FormControl>
-                        <FormLabel>Address</FormLabel>
+                        <FormLabel>Full Address</FormLabel>
                         <Textarea
                           placeholder="Address"
                           size="sm"
@@ -551,40 +482,35 @@ export default function UpdateDoctor() {
                     </Flex>
                   </CardBody>
                 </Card>
-                <Card mt={5} bg={useColorModeValue("white", "gray.700")}>
-                  <CardBody p={3} as={"form"}>
-                    <Flex align={"center"} justify={"space-between"}>
-                      {" "}
-                      <Heading as={"h3"} size={"sm"}>
-                        Password -{" "}
-                      </Heading>{" "}
-                    </Flex>
 
+                {/* Password Card */}
+                <Card mt={5} bg={useColorModeValue("white", "gray.700")}>
+                  <CardBody p={3}>
+                    <Heading as={"h3"} size={"sm"}>Password</Heading>
                     <Divider mt={2} mb={5} />
+
                     <Flex gap={10}>
                       <FormControl>
-                        <FormLabel>Password</FormLabel>
+                        <FormLabel>New Password</FormLabel>
                         <Input
                           size={"sm"}
-                          borderRadius={6}
                           type="password"
-                          placeholder="Password"
                           {...register("password")}
                         />
                       </FormControl>
+
                       <FormControl>
-                        <FormLabel>CNF Password</FormLabel>
+                        <FormLabel>Confirm Password</FormLabel>
                         <Input
                           size={"sm"}
-                          borderRadius={6}
                           type="password"
-                          placeholder="Password"
                           {...register("cnfPassword")}
                         />
                       </FormControl>
                     </Flex>
                   </CardBody>
                 </Card>
+
                 <Button
                   w={"100%"}
                   mt={10}
@@ -593,11 +519,13 @@ export default function UpdateDoctor() {
                   size={"sm"}
                   isLoading={isLoading}
                 >
-                  Update
+                  Update Doctor
                 </Button>
               </Box>
 
+              {/* Right Section (25% width) */}
               <Box w={"25%"}>
+                {/* Profile Picture Card */}
                 <Card
                   mt={5}
                   bg={useColorModeValue("white", "gray.700")}
@@ -617,8 +545,8 @@ export default function UpdateDoctor() {
                         w={150}
                         src={
                           doctorDetails?.image
-                            ? `${imageBaseURL}/${doctorDetails?.image}` // Use profilePicture
-                            : "/admin/profilePicturePlaceholder.png" // Fallback placeholder image
+                            ? `${imageBaseURL}/${doctorDetails?.image}`
+                            : "/admin/profilePicturePlaceholder.png"
                         }
                       />
                       {doctorDetails?.image && (
@@ -630,9 +558,7 @@ export default function UpdateDoctor() {
                             position={"absolute"}
                             right={5}
                             icon={<FaTrash />}
-                            onClick={() => {
-                              handleFileDelete();
-                            }}
+                            onClick={handleFileDelete}
                           />
                         </Tooltip>
                       )}
@@ -640,9 +566,8 @@ export default function UpdateDoctor() {
                     <VStack spacing={4} align="stretch" mt={10}>
                       <Input
                         size={"sm"}
-                        borderRadius={6}
                         type="file"
-                        display="none" // Hide the actual file input
+                        display="none"
                         ref={inputRef}
                         onChange={handleFileChange}
                         accept=".jpeg, .svg, .png , .jpg , .avif"
@@ -650,9 +575,7 @@ export default function UpdateDoctor() {
                       <Button
                         isDisabled={doctorDetails?.image !== null}
                         size={"sm"}
-                        onClick={() => {
-                          inputRef.current.click();
-                        }}
+                        onClick={() => inputRef.current.click()}
                         colorScheme="blue"
                       >
                         Upload Profile Picture
@@ -661,6 +584,7 @@ export default function UpdateDoctor() {
                   </CardBody>
                 </Card>
 
+                {/* Social Accounts Card */}
                 <Card
                   mt={5}
                   bg={useColorModeValue("white", "gray.700")}
@@ -668,16 +592,12 @@ export default function UpdateDoctor() {
                   pb={5}
                 >
                   <CardBody p={2}>
-                    <Heading as={"h3"} size={"sm"}>
-                      Social Accounts -{" "}
-                    </Heading>
+                    <Heading as={"h3"} size={"sm"}>Social Accounts</Heading>
                     <Divider mt={2} mb={5} />
+
                     <InputGroup mt={3} size="sm">
                       <InputLeftElement pointerEvents="none">
-                        <CgFacebook
-                          size={"20"}
-                          color={theme.colors.facebook[500]}
-                        />
+                        <CgFacebook size={"20"} color={theme.colors.facebook[500]} />
                       </InputLeftElement>
                       <Input
                         borderRadius={6}
@@ -688,30 +608,20 @@ export default function UpdateDoctor() {
                       <InputRightElement
                         cursor={"pointer"}
                         onClick={() => {
-                          const isValidUrl =
-                            /^(ftp|http|https):\/\/[^ "]+$/.test(
-                              doctorDetails?.fb_linik
-                            );
-                          if (isValidUrl) {
+                          if (/^(ftp|http|https):\/\/[^ "]+$/.test(doctorDetails?.fb_linik)) {
                             window.open(doctorDetails?.fb_linik, "_blank");
                           } else {
-                            ShowToast(
-                              toast,
-                              "error",
-                              "This is not a valid url"
-                            );
+                            ShowToast(toast, "error", "Invalid URL");
                           }
                         }}
                       >
                         <BiLinkExternal size={"16"} />
                       </InputRightElement>
                     </InputGroup>
+
                     <InputGroup mt={3} size="sm">
                       <InputLeftElement pointerEvents="none">
-                        <AiOutlineTwitter
-                          size={"20"}
-                          color={theme.colors.twitter[500]}
-                        />
+                        <AiOutlineTwitter size={"20"} color={theme.colors.twitter[500]} />
                       </InputLeftElement>
                       <Input
                         borderRadius={6}
@@ -722,30 +632,20 @@ export default function UpdateDoctor() {
                       <InputRightElement
                         cursor={"pointer"}
                         onClick={() => {
-                          const isValidUrl =
-                            /^(ftp|http|https):\/\/[^ "]+$/.test(
-                              doctorDetails?.insta_link
-                            );
-                          if (isValidUrl) {
-                            window.open(doctorDetails?.insta_link, "_blank");
+                          if (/^(ftp|http|https):\/\/[^ "]+$/.test(doctorDetails?.twitter_link)) {
+                            window.open(doctorDetails?.twitter_link, "_blank");
                           } else {
-                            ShowToast(
-                              toast,
-                              "error",
-                              "This is not a valid url"
-                            );
+                            ShowToast(toast, "error", "Invalid URL");
                           }
                         }}
                       >
                         <BiLinkExternal size={"16"} />
                       </InputRightElement>
                     </InputGroup>
+
                     <InputGroup mt={3} size="sm">
                       <InputLeftElement pointerEvents="none">
-                        <BsInstagram
-                          size={"20"}
-                          color={theme.colors.red[400]}
-                        />
+                        <BsInstagram size={"20"} color={theme.colors.red[400]} />
                       </InputLeftElement>
                       <Input
                         borderRadius={6}
@@ -756,30 +656,20 @@ export default function UpdateDoctor() {
                       <InputRightElement
                         cursor={"pointer"}
                         onClick={() => {
-                          const isValidUrl =
-                            /^(ftp|http|https):\/\/[^ "]+$/.test(
-                              doctorDetails?.insta_link
-                            );
-                          if (isValidUrl) {
+                          if (/^(ftp|http|https):\/\/[^ "]+$/.test(doctorDetails?.insta_link)) {
                             window.open(doctorDetails?.insta_link, "_blank");
                           } else {
-                            ShowToast(
-                              toast,
-                              "error",
-                              "This is not a valid url"
-                            );
+                            ShowToast(toast, "error", "Invalid URL");
                           }
                         }}
                       >
                         <BiLinkExternal size={"16"} />
                       </InputRightElement>
                     </InputGroup>
+
                     <InputGroup mt={3} size="sm">
                       <InputLeftElement pointerEvents="none">
-                        <AiFillYoutube
-                          size={20}
-                          color={theme.colors.red[600]}
-                        />
+                        <AiFillYoutube size={20} color={theme.colors.red[600]} />
                       </InputLeftElement>
                       <Input
                         borderRadius={6}
@@ -790,18 +680,10 @@ export default function UpdateDoctor() {
                       <InputRightElement
                         cursor={"pointer"}
                         onClick={() => {
-                          const isValidUrl =
-                            /^(ftp|http|https):\/\/[^ "]+$/.test(
-                              doctorDetails?.you_tube_link
-                            );
-                          if (isValidUrl) {
+                          if (/^(ftp|http|https):\/\/[^ "]+$/.test(doctorDetails?.you_tube_link)) {
                             window.open(doctorDetails?.you_tube_link, "_blank");
                           } else {
-                            ShowToast(
-                              toast,
-                              "error",
-                              "This is not a valid url"
-                            );
+                            ShowToast(toast, "error", "Invalid URL");
                           }
                         }}
                       >
@@ -810,22 +692,28 @@ export default function UpdateDoctor() {
                     </InputGroup>
                   </CardBody>
                 </Card>
+
+                {/* Fees Card with Earnings Calculation */}
                 <FeesForm
                   doctorDetails={doctorDetails}
                   register={register}
                   setValue={setValue}
+                  watch={watch}
                 />
               </Box>
             </Flex>
           </TabPanel>
+
           <TabPanel p={0}>
             <TimeSlotes doctorID={param.id} />
             <Divider my={10} />
             <VideoTimeSlotes doctorID={param.id} />
           </TabPanel>
+
           <TabPanel p={0}>
             <Review doctID={param.id} doctorDetails={doctorDetails} />
           </TabPanel>
+
           <TabPanel p={0}>
             <DoctAppointments doctID={param.id} />
           </TabPanel>
@@ -841,20 +729,18 @@ export default function UpdateDoctor() {
   );
 }
 
-// fees form
-const FeesForm = ({ doctorDetails, register, setValue }) => {
-  // Initialize state with doctorDetails or default values
+// Fees Form Component with Earnings Calculation
+const FeesForm = ({ doctorDetails, register, setValue, watch }) => {
   const [appointments, setAppointments] = useState({
     video_appointment: doctorDetails?.video_appointment,
     clinic_appointment: doctorDetails?.clinic_appointment,
     emergency_appointment: doctorDetails?.emergency_appointment,
   });
 
-  // Handle toggle switch change
   const handleToggle = (type) => {
     setAppointments((prev) => {
       const updatedValue = prev[type] === 1 ? 0 : 1;
-      setValue(type, updatedValue); // Update form state
+      setValue(type, updatedValue);
       return { ...prev, [type]: updatedValue };
     });
   };
@@ -880,7 +766,7 @@ const FeesForm = ({ doctorDetails, register, setValue }) => {
         </Heading>
         <Divider mt={2} mb={2} />
 
-        {/* Toggle Switches */}
+        {/* OPD Appointment Section */}
         <FormControl display="flex" alignItems="center" mb={2}>
           <FormLabel mb="0">OPD Appointment - </FormLabel>
           <Switch
@@ -897,14 +783,23 @@ const FeesForm = ({ doctorDetails, register, setValue }) => {
               borderRadius={6}
               type="number"
               placeholder="OPD Fee"
-              {...register("opd_fee")}
+              {...register("opd_fee", {
+                onChange: (e) => {
+                  const value = parseFloat(e.target.value) || 0;
+                  setValue("opd_earning", value * 0.8);
+                }
+              })}
               defaultValue={doctorDetails?.opd_fee}
             />
+            <Text fontSize="xs" color="green.600" mt={1}>
+              Your earnings: ₹{watch("opd_fee") ? (watch("opd_fee") * 0.8).toFixed(2) : "0.00"}
+            </Text>
           </FormControl>
         )}
 
         <Divider my={3} />
 
+        {/* Video Appointment Section */}
         <FormControl display="flex" alignItems="center" mb={2}>
           <FormLabel mb="0">Video Appointment - </FormLabel>
           <Switch
@@ -921,13 +816,23 @@ const FeesForm = ({ doctorDetails, register, setValue }) => {
               borderRadius={6}
               type="number"
               placeholder="Video Fee"
-              {...register("video_fee")}
+              {...register("video_fee", {
+                onChange: (e) => {
+                  const value = parseFloat(e.target.value) || 0;
+                  setValue("video_earning", value * 0.8);
+                }
+              })}
               defaultValue={doctorDetails?.video_fee}
             />
+            <Text fontSize="xs" color="green.600" mt={1}>
+              Your earnings: ₹{watch("video_fee") ? (watch("video_fee") * 0.8).toFixed(2) : "0.00"}
+            </Text>
           </FormControl>
         )}
 
         <Divider my={3} />
+
+        {/* Emergency Appointment Section */}
         <FormControl display="flex" alignItems="center" mb={2}>
           <FormLabel mb="0">Emergency Appointment - </FormLabel>
           <Switch
@@ -944,13 +849,19 @@ const FeesForm = ({ doctorDetails, register, setValue }) => {
               borderRadius={6}
               type="number"
               placeholder="Emergency Fee"
-              {...register("emg_fee")}
+              {...register("emg_fee", {
+                onChange: (e) => {
+                  const value = parseFloat(e.target.value) || 0;
+                  setValue("emg_earning", value * 0.8);
+                }
+              })}
               defaultValue={doctorDetails?.emg_fee}
             />
+            <Text fontSize="xs" color="green.600" mt={1}>
+              Your earnings: ₹{watch("emg_fee") ? (watch("emg_fee") * 0.8).toFixed(2) : "0.00"}
+            </Text>
           </FormControl>
         )}
-
-        {/* Input Fields (Shown Conditionally) */}
       </CardBody>
     </Card>
   );
@@ -960,6 +871,7 @@ const IsActiveSwitch = ({ id, isActive }) => {
   const { hasPermission } = useHasPermission();
   const toast = useToast();
   const queryClient = useQueryClient();
+  
   const handleActive = async (id, active) => {
     let data = { id, active };
     try {
@@ -991,17 +903,18 @@ const IsActiveSwitch = ({ id, isActive }) => {
         size={"sm"}
         onChange={(e) => {
           let active = e.target.checked ? 1 : 0;
-
           mutation.mutate({ id, active });
         }}
       />
     </FormControl>
   );
 };
+
 const StopBooking = ({ id, isStop_booking }) => {
   const { hasPermission } = useHasPermission();
   const toast = useToast();
   const queryClient = useQueryClient();
+  
   const handleActive = async (id, stop_booking) => {
     let data = { id, stop_booking };
     try {
@@ -1033,7 +946,6 @@ const StopBooking = ({ id, isStop_booking }) => {
         size={"sm"}
         onChange={(e) => {
           let stop_booking = e.target.checked ? 1 : 0;
-
           mutation.mutate({ id, stop_booking });
         }}
       />
