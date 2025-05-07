@@ -23,6 +23,8 @@ const Roles = React.lazy(() => import("../Pages/Roles/Index"));
 const Cities = React.lazy(() => import("../Pages/Cities/Index"));
 const States = React.lazy(() => import("../Pages/States/Index"));
 const Appointments = React.lazy(() => import("../Pages/Appointments"));
+const AppointmentsRequest = React.lazy(() => import("../Pages/Appointments Request"));
+
 const Users = React.lazy(() => import("../Pages/Users/Index"));
 const Patients = React.lazy(() => import("../Pages/Patients"));
 const UpdatePatient = React.lazy(() => import("../Pages/Patients/Update"));
@@ -135,6 +137,7 @@ export default function Dashboard() {
 
           {/* Appointments */}
           <Route path="/appointments" element={<Appointments />} />
+          <Route path="/appointments-request" element={<AppointmentsRequest />} />
           <Route
             path="/appointments-calender"
             element={<AppontmentCalender />}

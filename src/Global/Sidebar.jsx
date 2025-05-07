@@ -75,6 +75,12 @@ const getLinkSections = (isSuperAdmin) => {
           superadmin: true,
         },
         {
+          name: "Appointments-Request",
+          icon: RiStethoscopeFill,
+          permission: "APPOINTMENT_VIEW",
+          superadmin: true,
+        },
+        {
           name: "Appointment-Status-Log",
           icon: FaListAlt,
           permission: "APPOINTMENT_VIEW",
