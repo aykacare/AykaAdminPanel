@@ -27,6 +27,7 @@ import { useNavigate } from "react-router-dom";
 import getStatusBadge from "../../Hooks/StatusBadge";
 import getCancellationStatusBadge from "../../Hooks/CancellationReqBadge";
 import AddNewAppointment from "./AddNewAppointment";
+// import CountdownTimer from "./CountdownTimer";
 import { useEffect, useRef, useState } from "react";
 import Pagination from "../../Components/Pagination";
 import useDebounce from "../../Hooks/UseDebounce";
@@ -39,6 +40,7 @@ import DateRangeCalender from "../../Components/DateRangeCalender";
 import { useSelectedClinic } from "../../Context/SelectedClinic";
 import getStatusColor from "../../Hooks/GetStatusColor";
 import imageBaseURL from "../../Controllers/image";
+import { ADD } from "../../Controllers/ApiControllers";
 
 
 
@@ -49,6 +51,8 @@ const getPageIndices = (currentPage, itemsPerPage) => {
 };
 
 export default function AppointmentsRequest() {
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+
   const navigate = useNavigate();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
@@ -78,15 +82,85 @@ export default function AppointmentsRequest() {
   const handleTypeChange = (selectedType) => {
     settypeFilters(selectedType || ""); // Update the state when checkboxes change
   };
+  function CountdownTimer({ toTime, fromTime }) {
+    const [timeLeft, setTimeLeft] = useState("");
+  
+    useEffect(() => {
+      if (!toTime || !fromTime) {
+        setTimeLeft("Invalid Time");
+        return;
+      }
+  
+      const [toH, toM, toS = "00"] = toTime.split(":").map(Number);
+      const [fromH, fromM, fromS = "00"] = fromTime.split(":").map(Number);
+      const now = new Date();
+  
+      const toDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), toH, toM, toS);
+      const fromDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), fromH, fromM, fromS);
+  
+      const diffBetweenFromTo = (toDateTime - fromDateTime) / (1000 * 60); // in minutes
+  
+      if (diffBetweenFromTo > 90) {
+        setTimeLeft("Time Expired");
+        return;
+      }
+  
+      const interval = setInterval(() => {
+        const currentTime = new Date();
+        const diff = toDateTime - currentTime;
+  
+        if (diff <= 0) {
+          setTimeLeft("Time Expired");
+          clearInterval(interval);
+        } else {
+          const hrs = Math.floor(diff / (1000 * 60 * 60)).toString().padStart(2, "0");
+          const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, "0");
+          const secs = Math.floor((diff % (1000 * 60)) / 1000).toString().padStart(2, "0");
+          setTimeLeft(`${hrs}:${mins}:${secs}`);
+        }
+      }, 1000);
+  
+      return () => clearInterval(interval);
+    }, [toTime, fromTime]);
+  
+    return (
+      <Text fontSize="sm" fontWeight="600" color="blue.500">
+        Countdown: {timeLeft}
+      </Text>
+    );
+  }
+
+  const addPatientAndNavigate = async (appointment) => {
+    try {
+      let addPatientformData = new FormData();
+      addPatientformData.append("f_name", appointment.f_name);
+      addPatientformData.append("l_name", appointment.l_name);
+      addPatientformData.append("phone", appointment.phone);
+      addPatientformData.append("gender", appointment.gender);
+      addPatientformData.append("isd_code", "+91");
+      addPatientformData.append("clinic_id", 8);
+  
+      const res = await ADD(admin.token, "add_patient", addPatientformData);
+      if (res.response !== 200) {
+        throw new Error(res.message);
+      }
+      appointment.patient_id = res.id;
+      setSelectedAppointment(appointment);
+      onOpen(); // open the modal
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: "Failed to add patient",
+        description: err.message || "Unknown error",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
 
   const getData = async () => {
-    const url = `get_all_symptoms_request?start=${startIndex}&end=${endIndex}&search=${debouncedSearchQuery}&end_date=${dateRange.endDate || ""}&status=${statusFilters.join(
-      ", "
-    )}&type=${typeFilters.join(
-      ", "
-    )}&current_cancel_req_status=${cacellationReq.join(", ")}&doctor_id=${
-      admin.role.name === "Doctor" ? admin.id : ""
-    }&clinic_id=${selectedClinic?.id || ""}`;
+    const url = `get_symptom_request`;
     await t();
     const res = await GET(admin.token, url);
     return {
@@ -171,71 +245,9 @@ export default function AppointmentsRequest() {
       {/* Status checkboxes */}
       <Flex alignItems={"top"} justifyContent={"space-between"}>
         {" "}
-        <CheckboxGroup
-          colorScheme="blue"
-          onChange={handleStatusChange}
-          value={statusFilters}
-        >
-          <Flex mb={5} gap={4} alignItems={"center"}>
-            <Text fontSize={"md"} fontWeight={600}>
-              Status -{" "}
-            </Text>
-            <Checkbox value="Confirmed">Confirmed</Checkbox>
-            <Checkbox value="Visited">Visited</Checkbox>
-            <Checkbox value="Completed">Completed</Checkbox>
-            <Checkbox value="Pending">Pending</Checkbox>
-            <Checkbox value="Cancelled">Cancelled</Checkbox>
-            <Checkbox value="Rejected">Rejected</Checkbox>
-          </Flex>
-        </CheckboxGroup>{" "}
-        <Button
-          isLoading={isFetching || isRefetching}
-          size={"sm"}
-          colorScheme="blue"
-          onClick={() => {
-            queryClient.invalidateQueries(
-              ["appointments", page, debouncedSearchQuery, statusFilters],
-              { refetchInactive: true }
-            );
-          }}
-          rightIcon={<RefreshCwIcon size={14} />}
-        >
-          Refresh Table
-        </Button>
       </Flex>
-      <CheckboxGroup
-        colorScheme="blue"
-        onChange={handleCancellationChange}
-        value={cacellationReq}
-      >
-        <Flex mb={5} gap={4} alignItems={"center"}>
-          <Text fontSize={"md"} fontWeight={600}>
-            Cancellation Request -{" "}
-          </Text>
-          <Checkbox value="Initiated">Initiated</Checkbox>
-          <Checkbox value="Processing">Processing</Checkbox>
-          <Checkbox value="Approved">Approved</Checkbox>
-          <Checkbox value="Rejected">Rejected</Checkbox>
-        </Flex>
-      </CheckboxGroup>{" "}
-      <CheckboxGroup
-        colorScheme="blue"
-        onChange={handleTypeChange}
-        value={typeFilters}
-      >
-        <Flex mb={5} gap={4} alignItems={"center"}>
-          <Text fontSize={"md"} fontWeight={600}>
-            Type -{" "}
-          </Text>
-          {["OPD", "Video Consultant", "Emergency"].map((type) => (
-            <Checkbox value={type} key={type}>
-              {type}
-            </Checkbox>
-          ))}
-        </Flex>
-      </CheckboxGroup>{" "}
       {isLoading || !data ? (
-        <Box>
+        <Box> 
           {/* Loading skeletons */}
           <Grid
             templateColumns={{
@@ -283,7 +295,9 @@ export default function AppointmentsRequest() {
                   transition: "transform 0.3s ease-in-out",
                   boxShadow: "xl",
                 }}
-                onClick={() => navigate(`/appointment/${appointment.id}`)}
+                onClick={() => {
+                  addPatientAndNavigate(appointment); // set selected appointment
+                }}
               >
                 <Badge
                   colorScheme="pink"
@@ -301,7 +315,7 @@ export default function AppointmentsRequest() {
                   <Box>
                     {" "}
                     <Text fontWeight={"600"}>
-                      Doctor: {appointment.name}{" "}
+                      Patient: {appointment.f_name}{" "} {appointment.l_name}
                       {appointment.doct_l_name}
                     </Text>{" "}
                     <Text>
@@ -313,14 +327,23 @@ export default function AppointmentsRequest() {
 
                 <Flex justify={"space-between"} align={"center"}>
                   {" "}
-                  <Text fontSize={"sm"} fontWeight={"600"} color={"green.500"}>
+                  {/* <Text fontSize={"sm"} fontWeight={"600"} color={"green.500"}>
                     Date: {appointment.date}
-                  </Text>
+                  </Text> */}
                   <Text fontSize={"sm"} fontWeight={"600"} color={"green.500"}>
-                    Time: {appointment.time_slots}
+                    Time: {appointment.from_time} - {appointment.to_time}
+
+                    {/* <CountdownTimer toTime={appointment.to_time} /> */}
+                    <CountdownTimer toTime={appointment.to_time} fromTime={appointment.from_time} />
+
+
                   </Text>
+
+                  
+                  
+                  {/* <CountdownTimer toTime={appointment.to_time} /> */}
                 </Flex>
-                <Flex justify={"space-between"} align={"center"} mt={2}>
+                {/* <Flex justify={"space-between"} align={"center"} mt={2}>
                   {" "}
                   <Text>
                     Type:{" "}
@@ -339,24 +362,14 @@ export default function AppointmentsRequest() {
                     )}
                   </Text>
                   <Text>Status: {getStatusBadge(appointment.status)}</Text>
-                </Flex>
+                </Flex> */}
                 <Flex justify={"space-between"} align={"center"} mt={2}>
                   {" "}
                   <Text fontSize={"sm"}>
                     Payment :{" "}
-                    {appointment?.payment_status === "Paid" ? (
-                      <Badge colorScheme="green">
-                        {appointment.payment_status}
-                      </Badge>
-                    ) : appointment.payment_status === "Refunded" ? (
-                      <Badge colorScheme="blue">
-                        {appointment.payment_status}
-                      </Badge>
-                    ) : (
-                      <Badge colorScheme="red">{"Not Paid"}</Badge>
-                    )}
+                    <Badge colorScheme="green">PAID</Badge>
                   </Text>
-                  <Text fontSize={"sm"}>
+                  {/* <Text fontSize={"sm"}>
                     Source:{" "}
                     <Badge
                       colorScheme={
@@ -365,9 +378,9 @@ export default function AppointmentsRequest() {
                     >
                       {appointment.source}
                     </Badge>
-                  </Text>
+                  </Text> */}
                 </Flex>
-                <Flex justify={"space-between"} align={"center"} mt={2}>
+                {/* <Flex justify={"space-between"} align={"center"} mt={2}>
                   {" "}
                   <Text fontSize={"sm"} fontWeight={"600"}>
                     Clinic ID : #{appointment.clinic_id}
@@ -378,7 +391,7 @@ export default function AppointmentsRequest() {
                       appointment.current_cancel_req_status
                     )}
                   </Text>
-                </Flex>
+                </Flex> */}
               </Box>
             ))}
           </Grid>
@@ -397,7 +410,21 @@ export default function AppointmentsRequest() {
         />
       </Flex>
       {/* Add New Appointment */}
-      {isOpen && <AddNewAppointment isOpen={isOpen} onClose={onClose} />}
+      {/* {isOpen && <AddNewAppointment isOpen={isOpen} onClose={onClose} />} */}
+
+      {isOpen && (
+        <AddNewAppointment
+          isOpen={isOpen}
+          onClose={() => {
+            onClose();
+            setSelectedAppointment(null); // reset after closing
+          }}
+          appointmentData={selectedAppointment} // 👈 pass data
+        />
+        
+      )}
+
+
     </Box>
   );
 }

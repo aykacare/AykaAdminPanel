@@ -1,6 +1,7 @@
 ﻿import { Badge } from "@chakra-ui/react";
 
 const getStatusBadge = (status) => {
+
   switch (status) {
     case "Pending":
       return (

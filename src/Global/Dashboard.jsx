@@ -23,7 +23,7 @@ const Roles = React.lazy(() => import("../Pages/Roles/Index"));
 const Cities = React.lazy(() => import("../Pages/Cities/Index"));
 const States = React.lazy(() => import("../Pages/States/Index"));
 const Appointments = React.lazy(() => import("../Pages/Appointments"));
-const AppointmentsRequest = React.lazy(() => import("../Pages/Appointments Request"));
+const AppointmentsRequest = React.lazy(() => import("../Pages/AppointmentsRequest"));
 
 const Users = React.lazy(() => import("../Pages/Users/Index"));
 const Patients = React.lazy(() => import("../Pages/Patients"));
