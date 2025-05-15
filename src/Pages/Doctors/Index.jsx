@@ -105,7 +105,7 @@ export default function Doctors() {
     };
   };
   const { isLoading, data, error } = useQuery({
-    queryKey: ["doctors-main", selectedClinic?.id, debouncedSearchQuery],
+    queryKey: ["doctors-main", selectedClinic?.id, debouncedSearchQuery,startIndex,endIndex],
     queryFn: getData,
   });
   const handleActionClick = (rowData) => {
