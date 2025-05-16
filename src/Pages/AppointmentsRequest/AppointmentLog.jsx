@@ -239,7 +239,6 @@ export default function AppointmentStatusLog() {
           />
         </Box>
       )}
-
       <Flex justify={"center"} mt={4}>
         <Pagination
           currentPage={page}

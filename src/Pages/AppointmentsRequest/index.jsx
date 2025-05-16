@@ -68,6 +68,7 @@ export default function AppointmentsRequest() {
   const queryClient = useQueryClient();
   const { selectedClinic } = useSelectedClinic();
   const [cacellationReq, setCacellationReq] = useState([]);
+  const [timeLeft, setTimeLeft] = useState("");
   const [dateRange, setdateRange] = useState({
     startDate: null,
     endDate: null,
@@ -83,7 +84,6 @@ export default function AppointmentsRequest() {
     settypeFilters(selectedType || ""); // Update the state when checkboxes change
   };
   function CountdownTimer({ toTime, fromTime }) {
-    const [timeLeft, setTimeLeft] = useState("");
   
     useEffect(() => {
       if (!toTime || !fromTime) {
@@ -130,8 +130,20 @@ export default function AppointmentsRequest() {
     );
   }
 
-  const addPatientAndNavigate = async (appointment) => {
+  const addPatientAndNavigate = async (appointment,timeLeft) => {
     try {
+      if (timeLeft === "Time Expired") {
+        console.log("timeLeft",timeLeft);
+        toast({
+          title: "Appointment Time Expired",
+          description: "You cannot add a patient. The appointment time has expired.",
+          status: "warning",
+          duration: 3000,
+          isClosable: true,
+        });
+        return;
+      }
+
       let addPatientformData = new FormData();
       addPatientformData.append("f_name", appointment.f_name);
       addPatientformData.append("l_name", appointment.l_name);
@@ -296,7 +308,7 @@ export default function AppointmentsRequest() {
                   boxShadow: "xl",
                 }}
                 onClick={() => {
-                  addPatientAndNavigate(appointment); // set selected appointment
+                  addPatientAndNavigate(appointment,timeLeft); // set selected appointment
                 }}
               >
                 <Badge

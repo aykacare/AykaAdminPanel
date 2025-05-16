@@ -237,7 +237,7 @@ export default function UpdateClinic() {
                       </FormControl>
                     </Flex>
                     <Flex gap={10} mt={5}>
-                      <FormControl>
+                      {/* <FormControl>
                         <FormLabel>Latitude</FormLabel>
                         <Input
                           type="text"
@@ -256,7 +256,21 @@ export default function UpdateClinic() {
                             pattern: /^-?\d+(\.\d+)?$/,
                           })}
                         />
+                      </FormControl> */}
+                      <FormControl>
+                        <FormLabel>Google Map Location URL</FormLabel>
+                        <Input
+                          type="url"
+                          placeholder="https://www.google.com/maps/place/..."
+                          {...register("google_map_location_url", {
+                            pattern: {
+                              value: /^(https?:\/\/)?(www\.)?google\.[a-z.]+\/maps\/.+$/i,
+                              message: "Please enter a valid Google Maps URL",
+                            },
+                          })}
+                        />
                       </FormControl>
+
                     </Flex>
                     <Flex mt={5}>
                       <FormControl>
