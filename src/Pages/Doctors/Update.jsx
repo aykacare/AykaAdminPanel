@@ -282,6 +282,12 @@ export default function UpdateDoctor() {
                           </FormLabel>
                           <StopBooking id={param.id} isStop_booking={doctorDetails?.stop_booking} />
                         </FormControl>
+                        <FormControl display="flex" alignItems="center" mb={2} gap={3}>
+                          <FormLabel htmlFor="email-alerts" mb="0" fontSize={"sm"}>
+                            Is Best Doctor?
+                          </FormLabel>
+                          <BestDoctor id={param.id} is_best_doctor={doctorDetails?.is_best_doctor} />
+                        </FormControl>
                       </FormControl>
                     </Flex>
 
@@ -947,6 +953,48 @@ const StopBooking = ({ id, isStop_booking }) => {
         onChange={(e) => {
           let stop_booking = e.target.checked ? 1 : 0;
           mutation.mutate({ id, stop_booking });
+        }}
+      />
+    </FormControl>
+  );
+};
+const BestDoctor = ({ id, is_best_doctor }) => {
+  const { hasPermission } = useHasPermission();
+  const toast = useToast();
+  const queryClient = useQueryClient();
+  
+  const handleActive = async (id, is_best_doctor) => {
+    let data = { id, is_best_doctor };
+    try {
+      const res = await UPDATE(admin.token, "update_doctor", data);
+      if (res.response === 200) {
+        ShowToast(toast, "success", "Doctor Updated!");
+        queryClient.invalidateQueries("doctors");
+        queryClient.invalidateQueries(["doctors", "dashboard"]);
+        queryClient.invalidateQueries(["doctor", id]);
+      } else {
+        ShowToast(toast, "error", res.message);
+      }
+    } catch (error) {
+      ShowToast(toast, "error", JSON.stringify(error));
+    }
+  };
+
+  const mutation = useMutation({
+    mutationFn: async (data) => {
+      await handleActive(data.id, data.is_best_doctor);
+    },
+  });
+
+  return (
+    <FormControl display="flex" alignItems="center">
+      <Switch
+        isDisabled={!hasPermission("DOCTOR_UPDATE")}
+        defaultChecked={is_best_doctor === 1}
+        size={"sm"}
+        onChange={(e) => {
+          let is_best_doctor = e.target.checked ? 1 : 0;
+          mutation.mutate({ id, is_best_doctor });
         }}
       />
     </FormControl>
