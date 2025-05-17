@@ -284,7 +284,7 @@ export default function UpdateDoctor() {
                         </FormControl>
                         <FormControl display="flex" alignItems="center" mb={2} gap={3}>
                           <FormLabel htmlFor="email-alerts" mb="0" fontSize={"sm"}>
-                            Is Best Doctor?
+                            Promot Expert?
                           </FormLabel>
                           <BestDoctor id={param.id} is_best_doctor={doctorDetails?.is_best_doctor} />
                         </FormControl>
