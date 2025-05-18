@@ -101,7 +101,7 @@ export default function AppointmentsRequest() {
       const diffBetweenFromTo = (toDateTime - fromDateTime) / (1000 * 60); // in minutes
   
       if (diffBetweenFromTo > 90) {
-        setTimeLeft("Time Expired");
+        // setTimeLeft("Time Expired");
         return;
       }
   
@@ -145,12 +145,14 @@ export default function AppointmentsRequest() {
       }
 
       let addPatientformData = new FormData();
+      debugger;
       addPatientformData.append("f_name", appointment.f_name);
       addPatientformData.append("l_name", appointment.l_name);
       addPatientformData.append("phone", appointment.phone);
       addPatientformData.append("gender", appointment.gender);
       addPatientformData.append("isd_code", "+91");
       addPatientformData.append("clinic_id", 8);
+      addPatientformData.append("email", appointment.email);
   
       const res = await ADD(admin.token, "add_patient", addPatientformData);
       if (res.response !== 200) {
