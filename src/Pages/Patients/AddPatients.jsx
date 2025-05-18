@@ -130,7 +130,6 @@ function AddPatients({ nextFn, isOpen, onClose }) {
                   placeholder="First Name"
                 />
               </FormControl>
-
               <FormControl isRequired>
                 <FormLabel>Last Name</FormLabel>
                 <Input
@@ -138,7 +137,14 @@ function AddPatients({ nextFn, isOpen, onClose }) {
                   placeholder="Last Name"
                 />
               </FormControl>
-
+              <FormControl isRequired>
+                <FormLabel>Email</FormLabel>
+                <Input
+                  size="md"
+                  {...register("email")}
+                  placeholder="Email"
+                />
+              </FormControl>
               <FormControl isRequired gridcx>
                 <FormLabel>Phone</FormLabel>
                 <InputGroup>
