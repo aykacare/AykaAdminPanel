@@ -145,7 +145,6 @@ export default function AppointmentsRequest() {
       }
 
       let addPatientformData = new FormData();
-      debugger;
       addPatientformData.append("f_name", appointment.f_name);
       addPatientformData.append("l_name", appointment.l_name);
       addPatientformData.append("phone", appointment.phone);
