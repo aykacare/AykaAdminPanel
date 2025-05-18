@@ -93,6 +93,7 @@ function AddNewAppointment({ isOpen, onClose, PatientID ,appointmentData}) {
 
   const [patient, setpatient] = useState();
   const [patientId, setpatientId] = useState();
+  const [email, setEmail] = useState();
 
   
   const [doct, setdoct] = useState();
@@ -112,6 +113,7 @@ function AddNewAppointment({ isOpen, onClose, PatientID ,appointmentData}) {
   useEffect(() => {
     if (appointmentData) {
       setsymptoms(appointmentData.symptom);
+      setEmail(appointmentData.email);
       setstatus("pending");
       setFromTime(appointmentData.from_time);
       setToTime(appointmentData.to_time);
@@ -180,6 +182,7 @@ function AddNewAppointment({ isOpen, onClose, PatientID ,appointmentData}) {
       const fee = getFee(type, doct);
       const formData = {
         patient_id: patientId,
+        email: email,
         status,
         date: selectedDate,
         time_slots: selectedSlot.time_start,
