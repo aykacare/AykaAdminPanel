@@ -76,7 +76,6 @@ export default function Checkin() {
         : `get_appointment_check_in_page?start=${startIndex}&end=${endIndex}&search=${debouncedSearchQuery}&start_date=${start_date}&end_date=${end_date}`;
     const res = await GET(admin.token, url);
 
-    console.log(res);
     const rearrangedArray = res?.data.map((doctor) => {
       const {
         id,

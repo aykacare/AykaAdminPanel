@@ -39,7 +39,6 @@ export default function App() {
         const token = await getToken(messaging, {
           vapidKey: import.meta.env.VITE_FIREBASE_FCM_PUBLIC_KEY,
         });
-        console.log(token);
         if (admin) {
           updateUser(token);
         }

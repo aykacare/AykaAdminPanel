@@ -51,7 +51,6 @@ export default function AddCheckin({ isOpen, onClose }) {
     try {
       const res = await GET(admin.token, `get_appointment/${appointment_id}`);
       setisLoading(false);
-      console.log(res);
       if (res.data === null) {
         ShowToast(toast, "error", "Appointment not found");
         // Reset values if not found

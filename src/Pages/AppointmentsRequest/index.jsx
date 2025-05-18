@@ -27,7 +27,7 @@ import { useNavigate } from "react-router-dom";
 import getStatusBadge from "../../Hooks/StatusBadge";
 import getCancellationStatusBadge from "../../Hooks/CancellationReqBadge";
 import AddNewAppointment from "./AddNewAppointment";
-// import CountdownTimer from "./CountdownTimer";
+import CountdownTimer from "./CountdownTimer";
 import { useEffect, useRef, useState } from "react";
 import Pagination from "../../Components/Pagination";
 import useDebounce from "../../Hooks/UseDebounce";
@@ -83,52 +83,6 @@ export default function AppointmentsRequest() {
   const handleTypeChange = (selectedType) => {
     settypeFilters(selectedType || ""); // Update the state when checkboxes change
   };
-  function CountdownTimer({ toTime, fromTime }) {
-  
-    useEffect(() => {
-      if (!toTime || !fromTime) {
-        setTimeLeft("Invalid Time");
-        return;
-      }
-  
-      const [toH, toM, toS = "00"] = toTime.split(":").map(Number);
-      const [fromH, fromM, fromS = "00"] = fromTime.split(":").map(Number);
-      const now = new Date();
-  
-      const toDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), toH, toM, toS);
-      const fromDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), fromH, fromM, fromS);
-  
-      const diffBetweenFromTo = (toDateTime - fromDateTime) / (1000 * 60); // in minutes
-  
-      if (diffBetweenFromTo > 90) {
-        // setTimeLeft("Time Expired");
-        return;
-      }
-  
-      const interval = setInterval(() => {
-        const currentTime = new Date();
-        const diff = toDateTime - currentTime;
-  
-        if (diff <= 0) {
-          setTimeLeft("Time Expired");
-          clearInterval(interval);
-        } else {
-          const hrs = Math.floor(diff / (1000 * 60 * 60)).toString().padStart(2, "0");
-          const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, "0");
-          const secs = Math.floor((diff % (1000 * 60)) / 1000).toString().padStart(2, "0");
-          setTimeLeft(`${hrs}:${mins}:${secs}`);
-        }
-      }, 1000);
-  
-      return () => clearInterval(interval);
-    }, [toTime, fromTime]);
-  
-    return (
-      <Text fontSize="sm" fontWeight="600" color="blue.500">
-        Countdown: {timeLeft}
-      </Text>
-    );
-  }
 
   const addPatientAndNavigate = async (appointment,timeLeft) => {
     try {
@@ -347,7 +301,7 @@ export default function AppointmentsRequest() {
                     Time: {appointment.from_time} - {appointment.to_time}
 
                     {/* <CountdownTimer toTime={appointment.to_time} /> */}
-                    <CountdownTimer toTime={appointment.to_time} fromTime={appointment.from_time} />
+                    <CountdownTimer fromTime={appointment.from_time} toTime={appointment.to_time} />
 
 
                   </Text>

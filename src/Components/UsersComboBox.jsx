@@ -27,8 +27,8 @@ export default function UsersCombobox({
   const [value, setValue] = useState("");
   const { colorMode } = useColorMode();
   const [selected, setselected] = useState();
-  console.log(defaultData);
   useEffect(() => {
+    debugger;
     if (defaultData) {
       const selectedItem = items?.find((item) => {
         if (typeof defaultData === "string") {

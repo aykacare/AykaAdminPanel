@@ -87,7 +87,6 @@ export default function AddDoctor() {
         reset();
         navigate(`/doctor/update/${res.id}`);
       } else {
-        console.log(res);
         ShowToast(toast, "error", `${res.message} - ${res.response}`);
       }
     } catch (error) {

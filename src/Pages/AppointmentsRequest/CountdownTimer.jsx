@@ -1,31 +1,58 @@
 import { useEffect, useState } from "react";
+import { Text } from "@chakra-ui/react";
 
-function CountdownTimer({ toTime }) {
-  const [timeLeft, setTimeLeft] = useState("");
+function CountdownTimer({ fromTime, toTime }) {
+  const [display, setDisplay] = useState("");
 
   useEffect(() => {
-    const targetTime = new Date(`1970-01-01T${toTime}:00`).getTime(); // assume HH:mm:ss
+    if (!fromTime || !toTime) {
+      setDisplay("Invalid Time");
+      return;
+    }
 
-    const interval = setInterval(() => {
+    const parseTime = (timeStr) => {
+      const [h, m, s = "00"] = timeStr.split(":").map(Number);
       const now = new Date();
-      const currentTime = new Date(`1970-01-01T${now.toTimeString().slice(0, 8)}`).getTime();
-      const diff = targetTime - currentTime;
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, s);
+    };
 
-      if (diff <= 0) {
-        setTimeLeft("Time Expired");
-        clearInterval(interval);
-      } else {
-        const hrs = Math.floor(diff / (1000 * 60 * 60)).toString().padStart(2, "0");
-        const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, "0");
-        const secs = Math.floor((diff % (1000 * 60)) / 1000).toString().padStart(2, "0");
-        setTimeLeft(`${hrs}:${mins}:${secs}`);
+    const fromDateTime = parseTime(fromTime);
+    const toDateTime = parseTime(toTime);
+
+    const updateDisplay = () => {
+      const now = new Date();
+
+      if (now < fromDateTime) {
+        setDisplay(""); // or set to "Not Started"
+        return;
       }
-    }, 1000);
+
+      if (now >= toDateTime) {
+        setDisplay("Time Expired");
+        return;
+      }
+
+      const diff = toDateTime - now;
+
+      const hrs = Math.floor(diff / (1000 * 60 * 60)).toString().padStart(2, "0");
+      const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, "0");
+      const secs = Math.floor((diff % (1000 * 60)) / 1000).toString().padStart(2, "0");
+      setDisplay(`${hrs}:${mins}:${secs}`);
+    };
+
+    updateDisplay();
+    const interval = setInterval(updateDisplay, 1000);
 
     return () => clearInterval(interval);
-  }, [toTime]);
+  }, [fromTime, toTime]);
 
-  return <Text color="blue.500" fontWeight="bold">Countdown: {timeLeft}</Text>;
+  if (!display) return null;
+
+  return (
+    <Text fontSize="sm" fontWeight="600" color={display === "Time Expired" ? "red.500" : "blue.500"}>
+      {display === "Time Expired" ? display : `Countdown: ${display}`}
+    </Text>
+  );
 }
 
 export default CountdownTimer;

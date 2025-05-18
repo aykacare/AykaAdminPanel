@@ -69,6 +69,9 @@ export default function Appointments() {
     endDate: null,
   });
 
+  const bgColor = useColorModeValue("white", "gray.900");
+
+
   const handleStatusChange = (selectedStatuses) => {
     setStatusFilters(selectedStatuses || ""); // Update the state when checkboxes change
   };
@@ -272,7 +275,7 @@ export default function Appointments() {
             {data?.maindata?.map((appointment) => (
               <Box
                 position={"relative"}
-                bg={useColorModeValue("white", "gray.900")}
+                bg={bgColor}
                 key={appointment.id}
                 p={4}
                 borderRadius="md"
