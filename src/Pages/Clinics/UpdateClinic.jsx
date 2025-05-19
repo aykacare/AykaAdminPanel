@@ -17,6 +17,7 @@ import {
   Image,
   Input,
   Select,
+  Switch,
   Tab,
   TabList,
   TabPanel,
@@ -41,6 +42,7 @@ import Loading from "../../Components/Loading";
 import { FaTrash } from "react-icons/fa";
 import imageBaseURL from "../../Controllers/image";
 import GalleryImages from "./GalleryImages";
+import useHasPermission from "../../Hooks/HasPermission";
 const handleUpdate = async (data) => {
   const res = await UPDATE(admin.token, "update_clinic", data);
   if (res.response !== 200) {
@@ -82,6 +84,7 @@ export default function UpdateClinic() {
         setValue(key, clinicData[key]);
       });
   }, [clinicData, setValue]);
+
 
   const mutation = useMutation({
     mutationFn: async (data) => {
@@ -234,6 +237,12 @@ export default function UpdateClinic() {
                           {...register("state_title", { required: true })}
                           isReadOnly
                         />
+                      </FormControl>
+                      <FormControl display="flex" alignItems="center" mb={2} gap={3}>
+                        <FormLabel htmlFor="email-alerts" mb="0" fontSize={"sm"}>
+                          Promote Clinic?
+                        </FormLabel>
+                        <BestClinic id={id} is_best_clinic={clinicData?.is_best_clinic} />
                       </FormControl>
                     </Flex>
                     <Flex gap={10} mt={5}>
@@ -569,7 +578,6 @@ const Setting = ({ data, id }) => {
       tax: data?.tax || "",
     },
   });
-  console.log(data);
   const mutation = useMutation({
     mutationFn: async (data) => {
       await handleUpdate(data);
@@ -715,5 +723,47 @@ const Setting = ({ data, id }) => {
         </form>
       </CardBody>
     </Card>
+  );
+};
+const BestClinic = ({ id, is_best_clinic }) => {
+  const { hasPermission } = useHasPermission();
+  const toast = useToast();
+  const queryClient = useQueryClient();
+
+  const handleActive = async (id, is_best_clinic) => {
+    let data = { id, is_best_clinic };
+    try {
+      const res = await UPDATE(admin.token, "update_clinic", data);
+      if (res.response === 200) {
+        ShowToast(toast, "success", "Clinic Updated!");
+        queryClient.invalidateQueries("doctors");
+        queryClient.invalidateQueries(["doctors", "dashboard"]);
+        queryClient.invalidateQueries(["doctor", id]);
+      } else {
+        ShowToast(toast, "error", res.message);
+      }
+    } catch (error) {
+      ShowToast(toast, "error", JSON.stringify(error));
+    }
+  };
+
+  const mutation = useMutation({
+    mutationFn: async (data) => {
+      await handleActive(data.id, data.is_best_clinic);
+    },
+  });
+
+  return (
+    <FormControl display="flex" alignItems="center">
+      <Switch
+        isDisabled={!hasPermission("DOCTOR_UPDATE")}
+        defaultChecked={is_best_clinic === 1}
+        size={"sm"}
+        onChange={(e) => {
+          let is_best_clinic = e.target.checked ? 1 : 0;
+          mutation.mutate({ id, is_best_clinic });
+        }}
+      />
+    </FormControl>
   );
 };

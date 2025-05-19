@@ -19,7 +19,8 @@ import {
   useColorModeValue,
   useToast,
   List,
-  ListItem
+  ListItem,
+  Switch
 } from "@chakra-ui/react";
 import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -32,11 +33,12 @@ import {
 } from "../../Controllers/ShowToast";
 import admin from "../../Controllers/admin";
 import useLocationData from "../../Hooks/UseLocationData";
+import useHasPermission from "../../Hooks/HasPermission";
 
 export default function AddClinic() {
   const navigate = useNavigate();
   const [isLoading, setisLoading] = useState();
-  const { register, handleSubmit, reset, setValue } = useForm();
+  const { register, handleSubmit, reset, setValue, watch } = useForm();
   const queryClient = useQueryClient();
   const toast = useToast();
   const [profilePicture, setprofilePicture] = useState(null);
@@ -130,6 +132,18 @@ export default function AddClinic() {
                     {...register("title", { required: true })}
                   />
                 </FormControl>
+                <FormControl display="flex" alignItems="center" mb={4} gap={3}>
+                  <FormLabel htmlFor="is_best_clinic" mb="0" fontSize="sm">
+                    Promote Clinic?
+                  </FormLabel>
+                  <Switch
+                    id="is_best_clinic"
+                    size="sm"
+                    isChecked={watch("is_best_clinic") === 1}
+                    onChange={(e) => setValue("is_best_clinic", e.target.checked ? 1 : 0)}
+                  />
+                </FormControl>
+
                 <FormControl isRequired>
                   <FormLabel>City</FormLabel>
                   <Box position="relative">
@@ -324,3 +338,21 @@ export default function AddClinic() {
     </Box>
   );
 }
+
+// const BestClinicToggle = ({ is_best_clinic, setBestClinic }) => {
+//   const { hasPermission } = useHasPermission();
+
+//   return (
+//     <FormControl display="flex" alignItems="center">
+//       <Switch
+//         isDisabled={!hasPermission("DOCTOR_CREATE")}
+//         isChecked={is_best_clinic === 1}
+//         size="sm"
+//         onChange={(e) => {
+//           const checked = e.target.checked ? 1 : 0;
+//           setBestClinic(checked);
+//         }}
+//       />
+//     </FormControl>
+//   );
+// };
