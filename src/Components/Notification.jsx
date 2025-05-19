@@ -31,6 +31,7 @@ function NotificationIcon() {
   const toast = useToast();
   const navigate = useNavigate();
   const publicUrl = import.meta.env.BASE_URL;
+  // const sound = new Audio(`${publicUrl}/notification.mp3`);
   const sound = new Audio(`${publicUrl}/notification.mp3`);
   const queryClient = useQueryClient();
 
