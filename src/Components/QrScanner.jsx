@@ -10,7 +10,6 @@ const QRCodeScanner = ({ onScan }) => {
   };
 
   const handleError = (err) => {
-    console.error(err);
   };
 
   return (

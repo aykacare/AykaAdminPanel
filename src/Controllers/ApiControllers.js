@@ -10,7 +10,6 @@ const handleSessionExpiration = (error) => {
     error.response.data.status === false &&
     error.response.data.message === "Session expired. Please log in again."
   ) {
-    console.error(error.response.data.message);
     setTimeout(() => {
       localStorage.removeItem("admin");
       window.location.reload();

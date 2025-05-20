@@ -319,7 +319,6 @@ const SocialMediaActionButton = ({
   DeleteonOpen,
   isDisabled,
 }) => {
-  console.log("rowData", rowData, "isDisabled", isDisabled);
   const { hasPermission } = useHasPermission();
   return (
     <Flex justify={"center"}>

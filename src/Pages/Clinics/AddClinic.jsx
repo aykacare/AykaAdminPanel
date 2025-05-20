@@ -69,8 +69,6 @@ export default function AddClinic() {
       ...data,
     };
 
-    console.log(formData);
-
     try {
       setisLoading(true);
       const res = await ADD(admin.token, "add_clinic", formData);
@@ -81,11 +79,9 @@ export default function AddClinic() {
         reset();
         navigate(`/clinic/update/${res.id}`);
       } else {
-        console.log(res);
         ShowToast(toast, "error", `${res.message} - ${res.response}`);
       }
     } catch (error) {
-      console.log(error);
       setisLoading(false);
       ShowToast(toast, "error", JSON.stringify(error));
     }

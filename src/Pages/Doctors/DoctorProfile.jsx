@@ -126,7 +126,6 @@ export default function DoctorProfile() {
       isd_code,
       ...data,
     };
-    console.log(data);
 
     try {
       setisLoading(true);

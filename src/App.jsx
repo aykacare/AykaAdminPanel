@@ -27,11 +27,9 @@ export default function App() {
   const requestPermission = async () => {
     try {
       if (!("serviceWorker" in navigator)) {
-        console.error("Service workers are not supported in this browser.");
         return;
       }
       if (!("Notification" in window)) {
-        console.error("This browser does not support notifications.");
         return;
       }
       const permission = await Notification.requestPermission();

@@ -11,7 +11,6 @@ import RatingStars from "../../Hooks/ShowRating";
 function Review({ doctID, doctorDetails }) {
   const getData = async () => {
     const res = await GET(admin.token, `get_doctor_review/doctor/${doctID}`);
-    console.log(res.data);
     const rearrangedArray = res?.data.map((doctor) => {
       const {
         id,

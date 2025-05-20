@@ -86,7 +86,6 @@ export default function Login() {
     } catch (error) {
       setisLoading(false);
       toastError("An error occurred during login. Please try again.");
-      console.error(error);
     }
   };
 

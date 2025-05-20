@@ -110,7 +110,6 @@ function AddPatients({ nextFn, isOpen, onClose }) {
           </ModalHeader>
           <ModalCloseButton top={0} color={"#fff"} />
           <Divider />
-
           <ModalBody>
             <Grid templateColumns="repeat(3, 1fr)" gap={4} mt={3}>
               <FormControl isRequired>

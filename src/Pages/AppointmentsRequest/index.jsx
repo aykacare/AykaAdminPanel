@@ -50,6 +50,7 @@ const getPageIndices = (currentPage, itemsPerPage) => {
   return { startIndex, endIndex };
 };
 
+
 export default function AppointmentsRequest() {
   const [selectedAppointment, setSelectedAppointment] = useState(null);
 
@@ -74,6 +75,8 @@ export default function AppointmentsRequest() {
     endDate: null,
   });
 
+
+
   const handleStatusChange = (selectedStatuses) => {
     setStatusFilters(selectedStatuses || ""); // Update the state when checkboxes change
   };
@@ -84,38 +87,119 @@ export default function AppointmentsRequest() {
     settypeFilters(selectedType || ""); // Update the state when checkboxes change
   };
 
-  const addPatientAndNavigate = async (appointment,timeLeft) => {
+
+  const getPatients = async () => {
+  
+  };
+
+
+  // const addPatientAndNavigate = async (appointment, timeLeft) => {
+  //   const url = `get_patients`;
+  //   await t();
+  //   const res = await GET(admin.token, url);
+  //   return {
+  //     total_record: res.total_record,
+  //     patients: res.data,
+  //   };
+  //   if (patients?.some(patient => patient.f_name === appointment?.f_name)) {
+  //     console.log("Patient already exists in the data.");
+  //     onOpen();
+  //     return;
+  //   } else {
+  //     try {
+  //       if (timeLeft === "Time Expired") {
+  //         toast({
+  //           title: "Appointment Time Expired",
+  //           description: "You cannot add a patient. The appointment time has expired.",
+  //           status: "warning",
+  //           duration: 3000,
+  //           isClosable: true,
+  //         });
+  //         return;
+  //       }
+
+  //       let addPatientformData = new FormData();
+  //       addPatientformData.append("f_name", appointment.f_name);
+  //       addPatientformData.append("l_name", appointment.l_name);
+  //       addPatientformData.append("phone", appointment.phone);
+  //       addPatientformData.append("gender", appointment.gender);
+  //       addPatientformData.append("isd_code", "+91");
+  //       addPatientformData.append("clinic_id", 8);
+  //       addPatientformData.append("email", appointment.email);
+
+  //       const res = await ADD(admin.token, "add_patient", addPatientformData);
+  //       if (res.response !== 200) {
+  //         throw new Error(res.message);
+  //       }
+  //       appointment.patient_id = res.id;
+  //       setSelectedAppointment(appointment);
+  //       onOpen()
+  //     } catch (err) {
+  //       toast({
+  //         title: "Failed to add patient",
+  //         description: err.message || "Unknown error",
+  //         status: "error",
+  //         duration: 3000,
+  //         isClosable: true,
+  //       });
+  //     }
+  //   }
+  // };
+
+
+  const addPatientAndNavigate = async (appointment, timeLeft) => {
+    const url = `get_patients`;
+  
     try {
+      await t(); 
+      const res = await GET(admin.token, url);
+      const patients = res.data;
+      const patientExists = patients?.some(
+        patient => patient.f_name === appointment?.f_name
+      );
+  
+      if (patientExists) {
+        appointment.patient_id = patients.find(
+          patient => patient.f_name === appointment?.f_name
+        )?.id;
+        setSelectedAppointment(appointment);
+        onOpen(); // ✅ open modal for existing patient
+        return;
+      }
+  
+      // If appointment time has expired
       if (timeLeft === "Time Expired") {
-        console.log("timeLeft",timeLeft);
         toast({
           title: "Appointment Time Expired",
-          description: "You cannot add a patient. The appointment time has expired.",
+          description:
+            "You cannot add a patient. The appointment time has expired.",
           status: "warning",
           duration: 3000,
           isClosable: true,
         });
         return;
       }
-
+  
+      // Add new patient
       let addPatientformData = new FormData();
       addPatientformData.append("f_name", appointment.f_name);
       addPatientformData.append("l_name", appointment.l_name);
       addPatientformData.append("phone", appointment.phone);
       addPatientformData.append("gender", appointment.gender);
       addPatientformData.append("isd_code", "+91");
-      addPatientformData.append("clinic_id", 8);
+      addPatientformData.append("clinic_id", 8); // make dynamic if needed
       addPatientformData.append("email", appointment.email);
   
-      const res = await ADD(admin.token, "add_patient", addPatientformData);
-      if (res.response !== 200) {
-        throw new Error(res.message);
+      const addRes = await ADD(admin.token, "add_patient", addPatientformData);
+  
+      if (addRes.response !== 200) {
+        throw new Error(addRes.message);
       }
-      appointment.patient_id = res.id;
+  
+      appointment.patient_id = addRes.id;
       setSelectedAppointment(appointment);
-      onOpen(); // open the modal
+      onOpen(); // ✅ open modal after successful add
     } catch (err) {
-      console.error(err);
       toast({
         title: "Failed to add patient",
         description: err.message || "Unknown error",
@@ -125,7 +209,7 @@ export default function AppointmentsRequest() {
       });
     }
   };
-
+  
   const getData = async () => {
     const url = `get_symptom_request`;
     await t();
@@ -147,8 +231,10 @@ export default function AppointmentsRequest() {
       dateRange,
       selectedClinic?.id,
     ],
-    queryFn: getData,
+    queryFn: getData
   });
+ 
+
 
   const handlePageChange = (newPage) => {
     setPage(newPage);
@@ -214,7 +300,7 @@ export default function AppointmentsRequest() {
         {" "}
       </Flex>
       {isLoading || !data ? (
-        <Box> 
+        <Box>
           {/* Loading skeletons */}
           <Grid
             templateColumns={{
@@ -263,7 +349,7 @@ export default function AppointmentsRequest() {
                   boxShadow: "xl",
                 }}
                 onClick={() => {
-                  addPatientAndNavigate(appointment,timeLeft); // set selected appointment
+                  addPatientAndNavigate(appointment, timeLeft); // set selected appointment
                 }}
               >
                 <Badge
@@ -286,7 +372,7 @@ export default function AppointmentsRequest() {
                       {appointment.doct_l_name}
                     </Text>{" "}
                     <Text>
-                    symptom: {appointment.symptom}
+                      symptom: {appointment.symptom}
                     </Text>
                   </Box>
                 </Flex>
@@ -306,8 +392,8 @@ export default function AppointmentsRequest() {
 
                   </Text>
 
-                  
-                  
+
+
                   {/* <CountdownTimer toTime={appointment.to_time} /> */}
                 </Flex>
                 {/* <Flex justify={"space-between"} align={"center"} mt={2}>
@@ -388,7 +474,7 @@ export default function AppointmentsRequest() {
           }}
           appointmentData={selectedAppointment} // 👈 pass data
         />
-        
+
       )}
 
 

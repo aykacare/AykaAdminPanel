@@ -90,7 +90,6 @@ function UpdatePrescription() {
   }, [prescriptionData]);
 
   const handleMedicineChange = (index, field, value) => {
-    console.log(field, value, medicines);
     setMedicines((prevMedicines) => {
       // Update the specific medicine entry
       const updatedMedicines = prevMedicines.map((med, i) =>

@@ -90,7 +90,6 @@ export default function AddDoctor() {
         ShowToast(toast, "error", `${res.message} - ${res.response}`);
       }
     } catch (error) {
-      console.log(error);
       setisLoading(false);
       ShowToast(toast, "error", JSON.stringify(error));
     }
